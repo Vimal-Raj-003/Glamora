@@ -23,6 +23,7 @@ export function CartProvider({ children }) {
   const [products, setProducts] = useState({}) // id -> product
   const [open, setOpen] = useState(false)
   const syncedFor = useRef(null) // user id the cart has been merged for
+  const requested = useRef(new Set()) // product ids already requested, so a missing product is never re-fetched in a loop
 
   // Persist locally
   useEffect(() => {
@@ -70,11 +71,18 @@ export function CartProvider({ children }) {
 
   // Load product details for cart lines
   useEffect(() => {
-    const missing = items.map((i) => i.productId).filter((id) => !products[id])
+    const missing = items.map((i) => i.productId).filter((id) => !products[id] && !requested.current.has(id))
     if (!missing.length) return
+    missing.forEach((id) => requested.current.add(id))
     getProductsByIds(missing)
-      .then((list) => setProducts((prev) => ({ ...prev, ...Object.fromEntries(list.map((p) => [p.id, p])) })))
-      .catch(() => {})
+      .then((list) => {
+        setProducts((prev) => ({ ...prev, ...Object.fromEntries(list.map((p) => [p.id, p])) }))
+        // Drop cart lines whose product no longer exists (deleted or hidden)
+        const found = new Set(list.map((p) => p.id))
+        const gone = new Set(missing.filter((id) => !found.has(id)))
+        if (gone.size) setItems((prev) => prev.filter((i) => !gone.has(i.productId)))
+      })
+      .catch(() => missing.forEach((id) => requested.current.delete(id)))
   }, [items, products])
 
   const lines = useMemo(

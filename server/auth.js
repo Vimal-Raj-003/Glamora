@@ -6,15 +6,25 @@
 import { clerkMiddleware, getAuth, clerkClient } from '@clerk/express'
 import { adminEmails, ah, HttpError } from './lib.js'
 
-export const clerkConfigured = () => Boolean(process.env.CLERK_SECRET_KEY && process.env.CLERK_PUBLISHABLE_KEY)
+// A key still containing the "xxxx" placeholder from .env.example / .env.local counts as not set.
+const isReal = (v) => Boolean(v) && !/x{4,}/i.test(v)
+
+export const clerkConfigured = () => isReal(process.env.CLERK_SECRET_KEY) && isReal(process.env.CLERK_PUBLISHABLE_KEY)
 
 export function createClerkProvider() {
   if (!clerkConfigured()) {
     console.warn('[auth] CLERK_SECRET_KEY / CLERK_PUBLISHABLE_KEY not set - sign-in is disabled, public pages still work.')
     return { middleware: (req, res, next) => next(), getClerkId: () => null, fetchIdentity: async () => null }
   }
+  const clerk = clerkMiddleware()
   return {
-    middleware: clerkMiddleware(),
+    // If Clerk cannot verify a request (bad key, network error) treat it as anonymous instead of
+    // failing - public pages keep working and protected routes answer 401.
+    middleware: (req, res, next) =>
+      clerk(req, res, (err) => {
+        if (err) console.error('[auth] Clerk error:', err.message)
+        next()
+      }),
     getClerkId: (req) => getAuth(req).userId || null,
     async fetchIdentity(clerkId) {
       const u = await clerkClient.users.getUser(clerkId)

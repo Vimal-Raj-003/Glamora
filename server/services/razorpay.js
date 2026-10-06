@@ -1,7 +1,9 @@
 import crypto from 'node:crypto'
 import { HttpError } from '../lib.js'
 
-export const razorpayConfigured = () => Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)
+const isReal = (v) => Boolean(v) && !/x{4,}/i.test(v)
+
+export const razorpayConfigured = () => isReal(process.env.RAZORPAY_KEY_ID) && isReal(process.env.RAZORPAY_KEY_SECRET)
 
 // amount is in paise
 export async function createRazorpayOrder({ amount, receipt, notes }) {

@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import './env.js'
 import { createApp } from './app.js'
 import { createClerkProvider } from './auth.js'
 import { prisma } from './db.js'
