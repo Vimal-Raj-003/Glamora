@@ -1,0 +1,45 @@
+# Render Blueprint for the Glamora API (Express + Prisma + Neon).
+# Render dashboard -> New -> Blueprint -> pick this GitHub repo. Render asks for every value marked "sync: false".
+#
+# The same settings work on Railway: build "npm install", start "npm start", health check "/api/health",
+# and add the same environment variables.
+services:
+  - type: web
+    name: glamora-api
+    runtime: node
+    region: singapore # pick the region closest to your Neon database
+    # "free" sleeps when idle (the first request after a pause can take ~1 minute).
+    # Switch to "starter" before taking real payments so orders and the Razorpay webhook are never delayed.
+    plan: free
+    buildCommand: npm install # also generates the Prisma client (postinstall)
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      # --- Neon ---
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      # --- Clerk ---
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      # --- Admin ---
+      - key: SUPER_ADMIN_EMAILS
+        sync: false
+      # --- Razorpay ---
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      # --- Optional: more websites allowed to call the API (the two Glamora sites are already built in) ---
+      - key: CORS_ORIGINS
+        value: ""

@@ -5,6 +5,7 @@
 //   fetchIdentity(clerkId)      - returns { email, emailVerified, name }
 import { clerkMiddleware, getAuth, clerkClient } from '@clerk/express'
 import { adminEmails, ah, HttpError } from './lib.js'
+import { allowedOrigins } from './cors.js'
 
 // A key still containing the "xxxx" placeholder from .env.example / .env.local counts as not set.
 const isReal = (v) => Boolean(v) && !/x{4,}/i.test(v)
@@ -16,7 +17,8 @@ export function createClerkProvider() {
     console.warn('[auth] CLERK_SECRET_KEY / CLERK_PUBLISHABLE_KEY not set - sign-in is disabled, public pages still work.')
     return { middleware: (req, res, next) => next(), getClerkId: () => null, fetchIdentity: async () => null }
   }
-  const clerk = clerkMiddleware()
+  // Only accept session tokens that were issued to one of our own websites (the token's "azp" claim).
+  const clerk = clerkMiddleware({ authorizedParties: [...allowedOrigins()] })
   return {
     // If Clerk cannot verify a request (bad key, network error) treat it as anonymous instead of
     // failing - public pages keep working and protected routes answer 401.

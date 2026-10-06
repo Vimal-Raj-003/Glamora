@@ -10,6 +10,7 @@ import { accountRouter } from './routes/account.js'
 import { ordersRouter, razorpayWebhookHandler } from './routes/orders.js'
 import { adminRouter } from './routes/admin.js'
 import { HttpError } from './lib.js'
+import { corsMiddleware } from './cors.js'
 
 const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist')
 
@@ -17,11 +18,14 @@ export function createApp({ prisma, authProvider }) {
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', 1)
-  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }))
+  // The API is called from a different website (Vercel), so responses must be readable cross-origin.
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 
   // The webhook needs the raw request body, so it is mounted before express.json().
   app.post('/api/razorpay/webhook', express.raw({ type: 'application/json', limit: '1mb' }), razorpayWebhookHandler(prisma))
 
+  // CORS comes first so browsers' preflight (OPTIONS) requests are answered before anything else runs.
+  app.use('/api', corsMiddleware())
   app.use(express.json({ limit: '100kb' }))
   app.use('/api', rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false }))
   app.use('/api', authProvider.middleware)
