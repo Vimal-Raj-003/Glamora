@@ -1,0 +1,154 @@
+// Glamora database schema (Neon PostgreSQL via Prisma)
+// Apply with: npm run db:push   |   Seed sample products with: npm run db:seed
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // Neon pooled connection (used by the app)
+  directUrl = env("DIRECT_URL") // Neon direct connection (used by `prisma db push`)
+}
+
+model User {
+  id          String   @id @default(cuid())
+  clerkId     String   @unique
+  email       String   @unique
+  fullName    String   @default("")
+  phone       String?
+  role        String   @default("customer") // "customer" | "super_admin"
+  createdAt   DateTime @default(now())
+
+  addresses   Address[]
+  cartItems   CartItem[]
+  wishlist    WishlistItem[]
+  orders      Order[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  description String?
+  imageUrl    String?
+  sortOrder   Int       @default(0)
+  products    Product[]
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  categoryId     String
+  slug           String   @unique
+  name           String
+  description    String   @default("")
+  price          Decimal  @db.Decimal(10, 2)
+  compareAtPrice Decimal? @db.Decimal(10, 2)
+  stock          Int      @default(0)
+  imageUrl       String
+  isFeatured     Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  popularity     Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  category       Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  cartItems      CartItem[]
+  wishlistItems  WishlistItem[]
+  orderItems     OrderItem[]
+
+  @@index([categoryId])
+  @@index([isActive, isFeatured])
+  @@index([createdAt])
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int
+
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  fullName   String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String
+  country    String   @default("India")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  userId          String
+  status          String   @default("pending") // pending | paid | processing | shipped | delivered | cancelled
+  subtotal        Decimal  @db.Decimal(10, 2)
+  shippingFee     Decimal  @db.Decimal(10, 2) @default(0)
+  total           Decimal  @db.Decimal(10, 2)
+  shippingAddress Json
+  razorpayOrderId String?  @unique
+  createdAt       DateTime @default(now())
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items           OrderItem[]
+  payments        Payment[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String?
+  name      String
+  price     Decimal @db.Decimal(10, 2)
+  quantity  Int
+  imageUrl  String?
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  orderId           String
+  razorpayOrderId   String
+  razorpayPaymentId String   @unique
+  razorpaySignature String?
+  amount            Decimal  @db.Decimal(10, 2)
+  status            String   @default("captured")
+  createdAt         DateTime @default(now())
+
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
