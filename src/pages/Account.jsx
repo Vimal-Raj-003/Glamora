@@ -7,6 +7,7 @@ import { getMyOrders, getAddresses, saveAddress, deleteAddress, updateMe } from 
 import { formatPrice, formatDate } from '../lib/format'
 import { INDIAN_STATES, validateAddress } from '../lib/india'
 import { PageHeader, Spinner, ErrorBox, Empty, Field } from '../components/ui'
+import PayNowButton from '../components/PayNowButton'
 
 const TABS = ['Orders', 'Addresses', 'Profile']
 
@@ -19,9 +20,20 @@ export const STATUS_STYLES = {
   cancelled: 'bg-crimson-soft text-crimson',
 }
 
+// "paid" is shown to people as "Confirmed"; "pending" means the payment has not been received yet.
+export const STATUS_LABELS = {
+  pending: 'Awaiting payment',
+  paid: 'Confirmed',
+  processing: 'Processing',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+}
+
 function Orders({ userId }) {
-  const { data, loading, error } = useAsync(() => getMyOrders(), [userId])
-  if (loading) return <Spinner />
+  const [version, setVersion] = useState(0)
+  const { data, loading, error } = useAsync(() => getMyOrders(), [userId, version])
+  if (loading && !data) return <Spinner />
   if (error) return <ErrorBox message={error} />
   if (!data.length) return <Empty title="No orders yet" text="When you place an order it will appear here." actionTo="/shop" actionLabel="Start shopping" />
   return (
@@ -33,10 +45,19 @@ function Orders({ userId }) {
               <Link to={`/order/${o.id}`} className="font-semibold hover:text-crimson">#{o.id.slice(0, 8).toUpperCase()}</Link>
               <span className="ml-3 text-muted">{formatDate(o.createdAt)}</span>
             </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${STATUS_STYLES[o.status]}`}>{o.status}</span>
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[o.status]}`}>{STATUS_LABELS[o.status] || o.status}</span>
           </div>
           <p className="mt-3 text-sm text-muted">{o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</p>
-          <p className="mt-2 font-semibold">{formatPrice(o.total)}</p>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+            <p className="font-semibold">{formatPrice(o.total)}</p>
+            {o.status === 'pending' ? (
+              <PayNowButton order={o} onPaid={() => setVersion((v) => v + 1)} />
+            ) : (
+              o.payments?.find((p) => p.status === 'captured') && (
+                <p className="text-xs text-muted">Paid · <span className="font-mono">{o.payments.find((p) => p.status === 'captured').razorpayPaymentId}</span></p>
+              )
+            )}
+          </div>
         </li>
       ))}
     </ul>

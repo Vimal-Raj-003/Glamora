@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useAuth } from './AuthContext'
 import { getProductsByIds, fetchRemoteCart, replaceRemoteCart } from '../lib/api'
-import { shippingFor } from '../lib/format'
+import { shippingFor, maxQuantity } from '../lib/format'
 
 const CartContext = createContext(null)
 export const useCart = () => useContext(CartContext)
@@ -96,7 +96,7 @@ export function CartProvider({ children }) {
   const add = useCallback((product, quantity = 1) => {
     setProducts((prev) => ({ ...prev, [product.id]: product }))
     setItems((prev) => {
-      const max = Math.max(product.stock ?? 99, 0)
+      const max = maxQuantity(product)
       const existing = prev.find((i) => i.productId === product.id)
       if (existing) {
         return prev.map((i) => (i.productId === product.id ? { ...i, quantity: Math.min(i.quantity + quantity, max) } : i))
@@ -119,7 +119,7 @@ export function CartProvider({ children }) {
 
   const count = lines.reduce((n, l) => n + l.quantity, 0)
   const subtotal = lines.reduce((n, l) => n + l.quantity * Number(l.product.price), 0)
-  const shipping = shippingFor(subtotal)
+  const shipping = shippingFor(subtotal, lines)
 
   const value = { lines, count, subtotal, shipping, total: subtotal + shipping, add, setQuantity, remove, clear, open, setOpen }
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

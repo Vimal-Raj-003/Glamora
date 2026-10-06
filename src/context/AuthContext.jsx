@@ -71,7 +71,11 @@ export function AuthProvider({ children }) {
       routerPush={(to) => navigate(to)}
       routerReplace={(to) => navigate(to, { replace: true })}
       afterSignOutUrl="/"
-      appearance={{ variables: { colorPrimary: '#c8102e', colorText: '#0b0b0c', fontFamily: 'Inter, system-ui, sans-serif', borderRadius: '0.375rem' } }}
+      appearance={{
+        // Email + password is the main way in; Google is an optional extra shown underneath.
+        layout: { socialButtonsPlacement: 'bottom', socialButtonsVariant: 'blockButton' },
+        variables: { colorPrimary: '#c8102e', colorText: '#0b0b0c', fontFamily: 'Inter, system-ui, sans-serif', borderRadius: '0.375rem' },
+      }}
     >
       <ClerkBridge>{children}</ClerkBridge>
     </ClerkProvider>

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { formatPrice, FREE_SHIPPING_THRESHOLD } from '../lib/format'
+import { formatPrice, FREE_SHIPPING_THRESHOLD, isFreeShippingCart, maxQuantity } from '../lib/format'
 import QuantityStepper from './QuantityStepper'
 
 export default function CartDrawer() {
@@ -20,6 +20,7 @@ export default function CartDrawer() {
 
   if (!open) return null
   const remaining = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0)
+  const alwaysFree = isFreeShippingCart(lines)
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Shopping cart">
@@ -38,7 +39,9 @@ export default function CartDrawer() {
         ) : (
           <>
             <div className="border-b border-line bg-mist px-5 py-2.5 text-xs">
-              {remaining > 0 ? (
+              {alwaysFree ? (
+                <strong className="text-crimson">This offer ships free</strong>
+              ) : remaining > 0 ? (
                 <>Add <strong>{formatPrice(remaining)}</strong> more for free shipping</>
               ) : (
                 <strong className="text-crimson">You’ve unlocked free shipping!</strong>
@@ -54,7 +57,7 @@ export default function CartDrawer() {
                     </Link>
                     <p className="mt-0.5 text-sm text-muted">{formatPrice(l.product.price)}</p>
                     <div className="mt-2 flex items-center justify-between">
-                      <QuantityStepper value={l.quantity} max={l.product.stock} onChange={(q) => setQuantity(l.productId, q)} />
+                      <QuantityStepper value={l.quantity} max={maxQuantity(l.product)} onChange={(q) => setQuantity(l.productId, q)} />
                       <button onClick={() => remove(l.productId)} className="text-xs text-muted underline hover:text-crimson">Remove</button>
                     </div>
                   </div>

@@ -11,6 +11,8 @@
     "start": "node server/index.js",
     "postinstall": "prisma generate",
     "check:env": "node scripts/check-env.mjs",
+    "offer:on": "node scripts/test-offer.mjs on",
+    "offer:off": "node scripts/test-offer.mjs off",
     "db:push": "node --env-file-if-exists=.env.local --env-file-if-exists=.env node_modules/prisma/build/index.js db push",
     "db:seed": "node --env-file-if-exists=.env.local --env-file-if-exists=.env prisma/seed.js",
     "db:setup": "npm run db:push && npm run db:seed",

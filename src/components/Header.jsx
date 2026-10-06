@@ -83,7 +83,10 @@ export default function Header() {
                 </div>
               </div>
             ) : (
-              <Link to="/login" className="rounded-full px-3 py-2 text-sm font-medium hover:bg-white/10">Log in</Link>
+              <>
+                <Link to="/login" className="rounded-full px-3 py-2 text-sm font-medium hover:bg-white/10">Log in</Link>
+                <Link to="/signup" className="hidden rounded-full bg-crimson px-3.5 py-2 text-sm font-semibold hover:bg-crimson-dark sm:inline-block">Sign up</Link>
+              </>
             ))}
           {enabled && (
             <Link to="/wishlist" className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/10" aria-label={`Wishlist, ${wishlist.count} items`}>

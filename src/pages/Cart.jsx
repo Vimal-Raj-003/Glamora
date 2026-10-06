@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { formatPrice, FREE_SHIPPING_THRESHOLD } from '../lib/format'
+import { formatPrice, FREE_SHIPPING_THRESHOLD, maxQuantity } from '../lib/format'
 import QuantityStepper from '../components/QuantityStepper'
 import { PageHeader, Empty } from '../components/ui'
 
@@ -27,7 +27,7 @@ export default function Cart() {
                     <button onClick={() => remove(l.productId)} className="mt-2 text-xs text-muted underline hover:text-crimson">Remove</button>
                   </div>
                   <div className="mt-3 flex items-center gap-6 sm:mt-0">
-                    <QuantityStepper value={l.quantity} max={l.product.stock} onChange={(q) => setQuantity(l.productId, q)} />
+                    <QuantityStepper value={l.quantity} max={maxQuantity(l.product)} onChange={(q) => setQuantity(l.productId, q)} />
                     <span className="w-20 text-right font-semibold">{formatPrice(l.quantity * l.product.price)}</span>
                   </div>
                 </div>

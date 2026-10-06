@@ -3,23 +3,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
-import { getAddresses, saveAddress, createOrder, verifyPayment } from '../lib/api'
+import { getAddresses, saveAddress, createOrder } from '../lib/api'
+import { startPayment, confirmOnServer } from '../lib/razorpay'
 import { formatPrice } from '../lib/format'
 import { INDIAN_STATES, validateAddress as validate } from '../lib/india'
 import { PageHeader, Field, ErrorBox, Empty, Spinner } from '../components/ui'
 
 const EMPTY = { fullName: '', phone: '', line1: '', line2: '', city: '', state: '', postalCode: '' }
-
-function loadRazorpay() {
-  return new Promise((resolve, reject) => {
-    if (window.Razorpay) return resolve()
-    const s = document.createElement('script')
-    s.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    s.onload = resolve
-    s.onerror = () => reject(new Error('Could not load Razorpay. Check your connection and try again.'))
-    document.body.appendChild(s)
-  })
-}
 
 export default function Checkout() {
   const { user, profile } = useAuth()
@@ -34,6 +24,8 @@ export default function Checkout() {
   const [saveForLater, setSaveForLater] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [retry, setRetry] = useState(false) // customer closed the popup once
+  const [unverified, setUnverified] = useState(null) // paid in Razorpay but not yet confirmed by our server
 
   useEffect(() => {
     getAddresses()
@@ -75,51 +67,47 @@ export default function Checkout() {
       if (selected === 'new' && saveForLater) {
         await saveAddress({ ...address, isDefault: saved.length === 0 }).catch(() => {})
       }
-      const order = await createOrder(lines, address)
-      await loadRazorpay()
-
-      const rzp = new window.Razorpay({
-        key: order.keyId,
-        amount: order.amount,
-        currency: 'INR',
-        name: 'Glamora',
-        description: `Order #${order.orderId.slice(0, 8).toUpperCase()}`,
-        order_id: order.razorpayOrderId,
+      // The server prices the order and prepares the Razorpay order. If this exact cart is still unpaid
+      // from an earlier attempt, the same order is returned, so retrying never creates duplicates.
+      const init = await createOrder(lines, address)
+      await startPayment({
+        init,
         prefill: { name: address.fullName, email: user.email, contact: address.phone },
-        theme: { color: '#c8102e' },
-        modal: {
-          ondismiss: () => {
-            setBusy(false)
-            toast('Payment cancelled. Your cart is still saved.', 'error')
-          },
+        onPaid: () => {
+          clear()
+          navigate(`/order/${init.orderId}`, { replace: true })
         },
-        handler: async (resp) => {
-          try {
-            await verifyPayment({
-              orderId: order.orderId,
-              razorpayOrderId: resp.razorpay_order_id,
-              razorpayPaymentId: resp.razorpay_payment_id,
-              razorpaySignature: resp.razorpay_signature,
-            })
-            clear()
-            navigate(`/order/${order.orderId}`, { replace: true })
-          } catch (err) {
-            setBusy(false)
-            setError(`Payment received but could not be verified: ${err.message}. Please contact support with payment ID ${resp.razorpay_payment_id}.`)
-          }
+        onDismiss: () => {
+          setBusy(false)
+          setRetry(true)
+          toast('Payment not completed. Your order is saved - tap �Retry payment� when you are ready.', 'error')
+        },
+        onFailed: (message) => setError(message),
+        onVerifyError: (err, resp) => {
+          setBusy(false)
+          setUnverified({ orderId: init.orderId, resp })
+          setError(`Your payment went through but we could not confirm it yet (${err.message}). Do not pay again - use �Confirm my payment� below. Payment ID: ${resp.razorpay_payment_id}`)
         },
       })
-      rzp.on('payment.failed', (r) => {
-        setBusy(false)
-        setError(r.error?.description || 'Payment failed. Please try again.')
-      })
-      rzp.open()
     } catch (err) {
       setBusy(false)
       setError(err.message)
     }
   }
 
+  // Safe to press more than once: the server records a payment only once.
+  const confirmAgain = async () => {
+    setBusy(true)
+    setError('')
+    try {
+      await confirmOnServer(unverified.orderId, unverified.resp)
+      clear()
+      navigate(`/order/${unverified.orderId}`, { replace: true })
+    } catch (err) {
+      setBusy(false)
+      setError(`Still could not confirm the payment: ${err.message}. Please contact support with payment ID ${unverified.resp.razorpay_payment_id}.`)
+    }
+  }
   return (
     <>
       <PageHeader title="Checkout" />
@@ -185,7 +173,15 @@ export default function Checkout() {
             <div className="flex justify-between border-t border-line pt-3 text-base font-bold"><dt>Total</dt><dd>{formatPrice(total)}</dd></div>
           </dl>
           {error && <div className="mt-4"><ErrorBox message={error} /></div>}
-          <button className="btn btn-primary mt-5 w-full" disabled={busy}>{busy ? 'Processing…' : `Pay ${formatPrice(total)}`}</button>
+          {unverified ? (
+            <button type="button" onClick={confirmAgain} className="btn btn-primary mt-5 w-full" disabled={busy}>
+              {busy ? 'Confirming…' : 'Confirm my payment'}
+            </button>
+          ) : (
+            <button className="btn btn-primary mt-5 w-full" disabled={busy}>
+              {busy ? 'Processing…' : `${retry ? 'Retry payment' : 'Pay'} ${formatPrice(total)}`}
+            </button>
+          )}
           <p className="mt-3 text-center text-xs text-muted">Secure payment via Razorpay (UPI, cards, netbanking, wallets)</p>
           <p className="mt-2 text-center text-xs text-muted">
             By placing your order you agree to our <Link to="/terms-and-conditions" className="underline hover:text-crimson">Terms</Link>,{' '}

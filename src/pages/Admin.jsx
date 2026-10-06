@@ -7,7 +7,8 @@ import {
 } from '../lib/api'
 import { formatPrice, formatDate, slugify } from '../lib/format'
 import { PageHeader, Spinner, ErrorBox, Field } from '../components/ui'
-import { STATUS_STYLES } from './Account'
+import { STATUS_STYLES, STATUS_LABELS } from './Account'
+import { ChartCard, TimeChart, StatusBars, DataTable, compactINR, dayLabel } from '../components/charts'
 
 const TABS = ['Dashboard', 'Products', 'Orders', 'Customers']
 const STATUSES = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']
@@ -15,27 +16,108 @@ const STATUSES = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'canc
 const BLANK = {
   name: '', slug: '', description: '', price: '', compareAtPrice: '', stock: 0, categoryId: '',
   imageUrl: '', isFeatured: false, isActive: true, popularity: 0,
+  freeShipping: false, maxPerOrder: '', offerLabel: '',
 }
 
+const RANGES = [7, 30, 90]
+
 function Dashboard() {
-  const { data, loading, error } = useAsync(adminGetStats, [])
-  if (loading) return <Spinner />
+  const [days, setDays] = useState(30)
+  const { data, loading, error } = useAsync(() => adminGetStats(days), [days])
+  if (loading && !data) return <Spinner />
   if (error) return <ErrorBox message={error} />
+
+  const { totals, daily, statuses } = data
+  const periodRevenue = daily.reduce((n, d) => n + d.revenue, 0)
+  const periodOrders = daily.reduce((n, d) => n + d.orders, 0)
+
   const cards = [
-    { label: 'Revenue (paid orders)', value: formatPrice(data.revenue) },
-    { label: 'Orders', value: data.orders },
-    { label: 'To fulfil', value: data.toFulfil },
-    { label: 'Customers', value: data.customers },
-    { label: 'Low stock (≤ 5)', value: data.lowStock },
+    { label: 'Total revenue', value: formatPrice(totals.revenue), note: 'From confirmed payments' },
+    { label: 'Total orders', value: totals.orders, note: 'Paid orders' },
+    { label: 'Total customers', value: totals.customers, note: 'Registered accounts' },
+    { label: 'Total products', value: totals.products, note: `${totals.activeProducts} visible${totals.lowStock ? `, ${totals.lowStock} low on stock` : ''}` },
   ]
+
+  const statusRows = [
+    { key: 'paid', label: STATUS_LABELS.paid, count: statuses.paid },
+    { key: 'processing', label: STATUS_LABELS.processing, count: statuses.processing },
+    { key: 'shipped', label: STATUS_LABELS.shipped, count: statuses.shipped },
+    { key: 'delivered', label: STATUS_LABELS.delivered, count: statuses.delivered },
+    { key: 'cancelled', label: STATUS_LABELS.cancelled, count: statuses.cancelled, accent: true },
+    { key: 'pending', label: STATUS_LABELS.pending, count: statuses.pending, muted: true },
+  ]
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      {cards.map((c) => (
-        <div key={c.label} className="rounded-lg border border-line p-5">
-          <p className="label">{c.label}</p>
-          <p className="font-serif text-3xl font-semibold">{c.value}</p>
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {cards.map((c) => (
+          <div key={c.label} className="rounded-lg border border-line p-5">
+            <p className="label">{c.label}</p>
+            <p className="font-serif text-3xl font-semibold">{c.value}</p>
+            <p className="mt-1 text-xs text-muted">{c.note}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted">
+          Last {days} days: <strong className="text-ink">{formatPrice(periodRevenue)}</strong> from <strong className="text-ink">{periodOrders}</strong> {periodOrders === 1 ? 'order' : 'orders'}
+        </p>
+        <div className="inline-flex rounded-md border border-line p-0.5" role="group" aria-label="Date range">
+          {RANGES.map((r) => (
+            <button
+              key={r}
+              onClick={() => setDays(r)}
+              aria-pressed={days === r}
+              className={`rounded px-3 py-1.5 text-xs font-semibold transition ${days === r ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}
+            >
+              {r} days
+            </button>
+          ))}
         </div>
-      ))}
+      </div>
+
+      <ChartCard
+        title="Revenue"
+        subtitle="Confirmed payments per day (Indian time)"
+        table={
+          <DataTable
+            columns={[{ key: 'date', label: 'Day', render: (r) => dayLabel(r.date) }, { key: 'revenue', label: 'Revenue', render: (r) => formatPrice(r.revenue) }, { key: 'orders', label: 'Orders' }]}
+            rows={[...daily].reverse()}
+          />
+        }
+      >
+        <TimeChart
+          data={daily}
+          valueKey="revenue"
+          kind="area"
+          color="var(--color-crimson)"
+          formatValue={formatPrice}
+          axisFormat={compactINR}
+          ariaLabel={`Revenue per day for the last ${days} days. Total ${formatPrice(periodRevenue)}.`}
+          emptyText="No sales in this period yet"
+        />
+      </ChartCard>
+
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
+        <ChartCard title="Orders" subtitle="Confirmed orders per day">
+          <TimeChart
+            data={daily}
+            valueKey="orders"
+            kind="bars"
+            color="var(--color-graphite)"
+            formatValue={(v) => `${v} ${v === 1 ? 'order' : 'orders'}`}
+            axisFormat={(v) => String(Math.round(v))}
+            ariaLabel={`Orders per day for the last ${days} days. Total ${periodOrders}.`}
+            emptyText="No orders in this period yet"
+            height={220}
+          />
+        </ChartCard>
+
+        <ChartCard title="Order status" subtitle="All orders by current status">
+          <StatusBars rows={statusRows} />
+        </ChartCard>
+      </div>
     </div>
   )
 }
@@ -43,7 +125,7 @@ function Dashboard() {
 function ProductForm({ product, categories, onDone, onCancel }) {
   const toast = useToast()
   const [form, setForm] = useState(
-    product.id ? { ...product, compareAtPrice: product.compareAtPrice ?? '' } : { ...BLANK, categoryId: categories[0]?.id || '' },
+    product.id ? { ...product, compareAtPrice: product.compareAtPrice ?? '', maxPerOrder: product.maxPerOrder ?? '', offerLabel: product.offerLabel ?? '' } : { ...BLANK, categoryId: categories[0]?.id || '' },
   )
   const [busy, setBusy] = useState(false)
   const [errors, setErrors] = useState({})
@@ -75,6 +157,9 @@ function ProductForm({ product, categories, onDone, onCancel }) {
         isFeatured: form.isFeatured,
         isActive: form.isActive,
         popularity: parseInt(form.popularity, 10) || 0,
+        freeShipping: form.freeShipping,
+        maxPerOrder: form.maxPerOrder === '' ? null : Math.max(1, parseInt(form.maxPerOrder, 10) || 1),
+        offerLabel: String(form.offerLabel || '').trim() || null,
       })
       toast('Product saved')
       onDone()
@@ -106,7 +191,13 @@ function ProductForm({ product, categories, onDone, onCancel }) {
         </Field>
         <p className="mt-1 text-xs text-muted">Put image files in <code>public/images/…</code> and use a path like <code>/images/lips/4.jpg</code>, or paste any image URL.</p>
       </div>
+      <Field label="Offer badge text (optional)"><input className="input" placeholder="e.g. Launch offer" maxLength={60} {...bind('offerLabel')} /></Field>
+      <Field label="Max quantity per order (optional)"><input type="number" min="1" className="input" {...bind('maxPerOrder')} /></Field>
       <Field label="Popularity score"><input type="number" className="input" {...bind('popularity')} /></Field>
+      <label className="flex items-center gap-2 self-end pb-2.5 text-sm">
+        <input type="checkbox" className="h-4 w-4 accent-crimson" checked={form.freeShipping} onChange={(e) => setForm((f) => ({ ...f, freeShipping: e.target.checked }))} />
+        Always ships free
+      </label>
       <div className="flex items-end gap-6 pb-2.5 text-sm">
         <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-crimson" checked={form.isFeatured} onChange={(e) => setForm((f) => ({ ...f, isFeatured: e.target.checked }))} />Featured</label>
         <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-crimson" checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} />Visible</label>
@@ -188,13 +279,16 @@ function Orders() {
     }
   }
 
-  if (loading) return <Spinner />
+  if (loading && !data) return <Spinner />
   if (error) return <ErrorBox message={error} />
   if (!data.length) return <p className="text-sm text-muted">No orders yet.</p>
 
   return (
     <ul className="space-y-4">
-      {data.map((o) => (
+      {data.map((o) => {
+        const captured = o.payments.find((p) => p.status === 'captured')
+        const duplicates = o.payments.filter((p) => p.status === 'duplicate')
+        return (
         <li key={o.id} className="rounded-lg border border-line p-5 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -203,20 +297,42 @@ function Orders() {
             </div>
             <div className="flex items-center gap-3">
               <span className="font-semibold">{formatPrice(o.total)}</span>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${STATUS_STYLES[o.status]}`}>{o.status}</span>
-              <select aria-label="Update status" value={o.status} onChange={(e) => change(o.id, e.target.value)} className="input w-36 py-1.5">
-                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[o.status]}`}>{STATUS_LABELS[o.status]}</span>
+              <select aria-label="Update status" value={o.status} onChange={(e) => change(o.id, e.target.value)} className="input w-40 py-1.5">
+                {STATUSES.map((s) => (
+                  // an unpaid order can only stay pending or be cancelled
+                  <option key={s} value={s} disabled={!captured && s !== 'pending' && s !== 'cancelled'}>{STATUS_LABELS[s]}</option>
+                ))}
               </select>
             </div>
           </div>
           <p className="mt-3 text-muted">{o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</p>
+          <div className="mt-2 rounded-md bg-mist px-3 py-2 text-xs">
+            {captured ? (
+              <p>
+                <strong className="text-emerald-700">Payment received</strong> {formatPrice(captured.amount)} on {formatDate(captured.createdAt)}
+                <span className="block break-all text-muted sm:inline sm:before:content-['_·_']">Razorpay payment <span className="font-mono">{captured.razorpayPaymentId}</span>, order <span className="font-mono">{captured.razorpayOrderId}</span></span>
+              </p>
+            ) : (
+              <p className="text-muted">
+                <strong className="text-ink">Not paid</strong>
+                {o.razorpayOrderId && <> · Razorpay order <span className="font-mono">{o.razorpayOrderId}</span></>}
+              </p>
+            )}
+            {duplicates.map((p) => (
+              <p key={p.id} className="mt-1 font-semibold text-crimson">
+                Duplicate payment {formatPrice(p.amount)} ({p.razorpayPaymentId}) - refund this in the Razorpay dashboard.
+              </p>
+            ))}
+          </div>
           {o.shippingAddress && (
             <p className="mt-2 text-xs text-muted">
               Ship to: {o.shippingAddress.fullName}, {o.shippingAddress.line1}, {o.shippingAddress.city}, {o.shippingAddress.state} {o.shippingAddress.postalCode} · {o.shippingAddress.phone}
             </p>
           )}
         </li>
-      ))}
+        )
+      })}
     </ul>
   )
 }

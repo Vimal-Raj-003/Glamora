@@ -56,10 +56,12 @@ export const deleteAddress = (id) => request(`/addresses/${id}`, { method: 'DELE
 export const getMyOrders = () => request('/orders')
 export const getOrder = (id) => request(`/orders/${id}`)
 export const createOrder = (items, address) => request('/orders', { method: 'POST', body: { items, address } })
+// Re-opens payment for an order that is still unpaid (popup closed, payment failed, ...)
+export const getPayInit = (orderId) => request(`/orders/${orderId}/pay`, { method: 'POST' })
 export const verifyPayment = (payload) => request('/orders/verify', { method: 'POST', body: payload })
 
 // ---------- Admin (Super Admin only) ----------
-export const adminGetStats = () => request('/admin/stats')
+export const adminGetStats = (days = 30) => request('/admin/stats', { query: { days } })
 export const adminGetProducts = () => request('/admin/products')
 export const adminSaveProduct = (product) => {
   const { id, ...data } = product

@@ -4,7 +4,7 @@ import { useAsync } from '../hooks/useAsync'
 import { getProduct, getProducts } from '../lib/api'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
-import { formatPrice, discountPercent } from '../lib/format'
+import { formatPrice, discountPercent, maxQuantity } from '../lib/format'
 import QuantityStepper from '../components/QuantityStepper'
 import ProductGrid from '../components/ProductGrid'
 import { Spinner, ErrorBox, Empty } from '../components/ui'
@@ -54,11 +54,15 @@ export default function ProductDetail() {
             {off > 0 && (
               <>
                 <span className="text-lg text-muted line-through">{formatPrice(product.compareAtPrice)}</span>
-                <span className="rounded bg-crimson-soft px-2 py-0.5 text-xs font-bold text-crimson">{off}% OFF</span>
+                <span className="rounded bg-crimson-soft px-2 py-0.5 text-xs font-bold uppercase text-crimson">{product.offerLabel || `${off}% OFF`}</span>
               </>
             )}
           </div>
-          <p className="mt-1 text-xs text-muted">Inclusive of all taxes</p>
+          <p className="mt-1 text-xs text-muted">
+            Inclusive of all taxes
+            {product.freeShipping && ' · Ships free'}
+            {product.maxPerOrder ? ` · Limit ${product.maxPerOrder} per order` : ''}
+          </p>
 
           <p className="mt-6 leading-relaxed text-graphite">{product.description}</p>
 
@@ -67,7 +71,7 @@ export default function ProductDetail() {
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-4">
-            <QuantityStepper value={qty} max={product.stock} onChange={(v) => setQty(Math.max(1, v))} />
+            <QuantityStepper value={qty} max={maxQuantity(product)} onChange={(v) => setQty(Math.max(1, v))} />
             <button onClick={() => add(product, qty)} disabled={soldOut} className="btn btn-primary flex-1 sm:flex-none sm:px-12">
               Add to cart
             </button>

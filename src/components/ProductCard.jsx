@@ -20,8 +20,10 @@ export default function ProductCard({ product }) {
             loading="lazy"
             className="h-full w-full object-contain p-4 mix-blend-multiply transition duration-500 group-hover:scale-105"
           />
-          {off > 0 && !soldOut && (
-            <span className="absolute left-3 top-3 rounded bg-crimson px-2 py-1 text-[11px] font-bold text-white">{off}% OFF</span>
+          {(product.offerLabel || off > 0) && !soldOut && (
+            <span className="absolute left-3 top-3 rounded bg-crimson px-2 py-1 text-[11px] font-bold uppercase text-white">
+              {product.offerLabel || `${off}% OFF`}
+            </span>
           )}
           {soldOut && (
             <span className="absolute left-3 top-3 rounded bg-ink px-2 py-1 text-[11px] font-bold text-white">SOLD OUT</span>

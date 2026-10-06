@@ -1,18 +1,23 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAsync } from '../hooks/useAsync'
 import { getOrder } from '../lib/api'
 import { formatPrice, formatDate } from '../lib/format'
 import { Spinner, ErrorBox, Empty } from '../components/ui'
+import PayNowButton from '../components/PayNowButton'
 
 export default function OrderConfirmation() {
   const { id } = useParams()
-  const { data: order, loading, error } = useAsync(() => getOrder(id), [id])
+  const [version, setVersion] = useState(0)
+  const { data: order, loading, error } = useAsync(() => getOrder(id), [id, version])
 
-  if (loading) return <Spinner />
+  if (loading && !order) return <Spinner />
   if (error) return <div className="container-x py-10"><ErrorBox message={error} /></div>
   if (!order) return <Empty title="Order not found" actionTo="/account" actionLabel="My orders" />
 
-  const paid = order.status !== 'pending' && order.status !== 'cancelled'
+  const payment = order.payments?.find((p) => p.status === 'captured')
+  const unpaid = order.status === 'pending'
+  const paid = Boolean(payment) && order.status !== 'cancelled'
   const a = order.shippingAddress
 
   return (
@@ -21,10 +26,21 @@ export default function OrderConfirmation() {
         <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full text-3xl text-white ${paid ? 'bg-crimson' : 'bg-ink'}`} aria-hidden="true">
           {paid ? '✓' : '…'}
         </div>
-        <h1 className="mt-5 font-serif text-4xl font-semibold">{paid ? 'Thank you for your order!' : 'Order received'}</h1>
+        <h1 className="mt-5 font-serif text-4xl font-semibold">
+          {paid ? 'Thank you for your order!' : unpaid ? 'Payment pending' : 'Order ' + order.status}
+        </h1>
         <p className="mt-2 text-muted">
-          {paid ? 'Your payment was successful. We’ll start packing your order right away.' : 'We haven’t confirmed your payment yet.'}
+          {paid
+            ? 'Your payment was successful. We’ll start packing your order right away.'
+            : unpaid
+              ? 'We haven’t received your payment yet. You can complete it below.'
+              : 'This order is no longer active.'}
         </p>
+        {unpaid && (
+          <div className="mt-5">
+            <PayNowButton order={order} onPaid={() => setVersion((v) => v + 1)} className="btn btn-primary" />
+          </div>
+        )}
       </div>
 
       <div className="mt-10 rounded-lg border border-line p-6">
@@ -32,6 +48,7 @@ export default function OrderConfirmation() {
           <div><p className="label">Order</p>#{order.id.slice(0, 8).toUpperCase()}</div>
           <div><p className="label">Date</p>{formatDate(order.createdAt)}</div>
           <div><p className="label">Status</p><span className="font-semibold capitalize text-crimson">{order.status}</span></div>
+          <div><p className="label">Payment</p>{payment ? <span className="font-semibold text-emerald-700">Paid</span> : <span className="text-muted">Not paid</span>}</div>
         </div>
         <ul className="mt-6 divide-y divide-line border-t border-line">
           {order.items.map((i) => (
@@ -47,6 +64,12 @@ export default function OrderConfirmation() {
           <div className="flex justify-between"><dt>Shipping</dt><dd>{Number(order.shippingFee) === 0 ? 'Free' : formatPrice(order.shippingFee)}</dd></div>
           <div className="flex justify-between text-base font-bold"><dt>Total</dt><dd>{formatPrice(order.total)}</dd></div>
         </dl>
+        {payment && (
+          <div className="mt-6 border-t border-line pt-4 text-sm">
+            <p className="label">Payment reference</p>
+            <span className="break-all font-mono text-xs">{payment.razorpayPaymentId}</span>
+          </div>
+        )}
         {a && (
           <div className="mt-6 border-t border-line pt-4 text-sm">
             <p className="label">Shipping to</p>

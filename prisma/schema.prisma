@@ -49,6 +49,9 @@ model Product {
   isFeatured     Boolean  @default(false)
   isActive       Boolean  @default(true)
   popularity     Int      @default(0)
+  freeShipping   Boolean  @default(false) // never charge shipping when the cart holds only free-shipping products
+  maxPerOrder    Int? // optional per-order quantity limit (enforced on the server)
+  offerLabel     String? // optional badge text such as "₹1 Live Test Offer"
   createdAt      DateTime @default(now())
 
   category       Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -145,7 +148,7 @@ model Payment {
   razorpayPaymentId String   @unique
   razorpaySignature String?
   amount            Decimal  @db.Decimal(10, 2)
-  status            String   @default("captured")
+  status            String   @default("captured") // "captured" | "duplicate" (a second payment for an already-paid order: refund it)
   createdAt         DateTime @default(now())
 
   order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)

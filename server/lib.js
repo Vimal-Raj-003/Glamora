@@ -4,6 +4,7 @@ export const FREE_SHIPPING_THRESHOLD = 999
 export const SHIPPING_FEE = 80
 export const ORDER_STATUSES = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']
 export const PAID_STATUSES = ['paid', 'processing', 'shipped', 'delivered']
+export const MIN_ORDER_PAISE = 100 // Razorpay's minimum is ₹1
 
 // Wraps an async route so rejected promises reach the Express error handler.
 export const ah = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next)
@@ -39,7 +40,12 @@ export const addressSchema = z.object({
 
 export const money = (n) => Math.round(Number(n) * 100) / 100
 
-export const shippingFor = (subtotal) => (subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE)
+// Shipping is free above the threshold, and always free when every product in the cart is a free-shipping product.
+// `products` is the list of product rows in the cart.
+export const shippingFor = (subtotal, products = []) => {
+  if (products.length > 0 && products.every((p) => p.freeShipping)) return 0
+  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
+}
 
 export const adminEmails = () =>
   new Set(
