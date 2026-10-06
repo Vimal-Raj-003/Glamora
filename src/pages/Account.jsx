@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useAsync } from '../hooks/useAsync'
-import { getMyOrders, getAddresses, saveAddress, deleteAddress } from '../lib/api'
-import { supabase } from '../lib/supabase'
+import { getMyOrders, getAddresses, saveAddress, deleteAddress, updateMe } from '../lib/api'
 import { formatPrice, formatDate } from '../lib/format'
 import { INDIAN_STATES, validateAddress } from '../lib/india'
 import { PageHeader, Spinner, ErrorBox, Empty, Field } from '../components/ui'
@@ -21,7 +20,7 @@ export const STATUS_STYLES = {
 }
 
 function Orders({ userId }) {
-  const { data, loading, error } = useAsync(() => getMyOrders(userId), [userId])
+  const { data, loading, error } = useAsync(() => getMyOrders(), [userId])
   if (loading) return <Spinner />
   if (error) return <ErrorBox message={error} />
   if (!data.length) return <Empty title="No orders yet" text="When you place an order it will appear here." actionTo="/shop" actionLabel="Start shopping" />
@@ -32,7 +31,7 @@ function Orders({ userId }) {
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
             <div>
               <Link to={`/order/${o.id}`} className="font-semibold hover:text-crimson">#{o.id.slice(0, 8).toUpperCase()}</Link>
-              <span className="ml-3 text-muted">{formatDate(o.created_at)}</span>
+              <span className="ml-3 text-muted">{formatDate(o.createdAt)}</span>
             </div>
             <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${STATUS_STYLES[o.status]}`}>{o.status}</span>
           </div>
@@ -44,12 +43,12 @@ function Orders({ userId }) {
   )
 }
 
-const EMPTY = { full_name: '', phone: '', line1: '', line2: '', city: '', state: '', postal_code: '', country: 'India', is_default: false }
+const EMPTY = { fullName: '', phone: '', line1: '', line2: '', city: '', state: '', postalCode: '', country: 'India', isDefault: false }
 
 function Addresses({ userId }) {
   const toast = useToast()
   const [version, setVersion] = useState(0)
-  const { data, loading, error } = useAsync(() => getAddresses(userId), [userId, version])
+  const { data, loading, error } = useAsync(() => getAddresses(), [userId, version])
   const [editing, setEditing] = useState(null)
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
@@ -63,7 +62,7 @@ function Addresses({ userId }) {
     if (Object.keys(errs).length) return
     setBusy(true)
     try {
-      await saveAddress(userId, editing)
+      await saveAddress(editing)
       toast('Address saved')
       setEditing(null)
       setVersion((v) => v + 1)
@@ -85,7 +84,7 @@ function Addresses({ userId }) {
   if (editing) {
     return (
       <form onSubmit={submit} noValidate className="grid max-w-2xl gap-4 sm:grid-cols-2">
-        <Field label="Full name" error={errors.full_name}><input className="input" {...set('full_name')} /></Field>
+        <Field label="Full name" error={errors.fullName}><input className="input" {...set('fullName')} /></Field>
         <Field label="Mobile number" error={errors.phone}><input inputMode="numeric" maxLength={10} className="input" {...set('phone')} /></Field>
         <div className="sm:col-span-2"><Field label="Address line 1" error={errors.line1}><input className="input" {...set('line1')} /></Field></div>
         <div className="sm:col-span-2"><Field label="Address line 2 (optional)"><input className="input" {...set('line2')} /></Field></div>
@@ -96,9 +95,9 @@ function Addresses({ userId }) {
             {INDIAN_STATES.map((s) => <option key={s}>{s}</option>)}
           </select>
         </Field>
-        <Field label="PIN code" error={errors.postal_code}><input inputMode="numeric" maxLength={6} className="input" {...set('postal_code')} /></Field>
+        <Field label="PIN code" error={errors.postalCode}><input inputMode="numeric" maxLength={6} className="input" {...set('postalCode')} /></Field>
         <label className="flex items-center gap-2 self-end pb-2.5 text-sm">
-          <input type="checkbox" checked={!!editing.is_default} onChange={(e) => setEditing((a) => ({ ...a, is_default: e.target.checked }))} className="h-4 w-4 accent-crimson" />
+          <input type="checkbox" checked={!!editing.isDefault} onChange={(e) => setEditing((a) => ({ ...a, isDefault: e.target.checked }))} className="h-4 w-4 accent-crimson" />
           Make default
         </label>
         <div className="flex gap-3 sm:col-span-2">
@@ -113,16 +112,16 @@ function Addresses({ userId }) {
   if (error) return <ErrorBox message={error} />
   return (
     <div>
-      <button className="btn btn-dark btn-sm" onClick={() => setEditing({ ...EMPTY, is_default: data.length === 0 })}>+ Add address</button>
+      <button className="btn btn-dark btn-sm" onClick={() => setEditing({ ...EMPTY, isDefault: data.length === 0 })}>+ Add address</button>
       {data.length === 0 ? (
         <p className="mt-6 text-sm text-muted">No saved addresses yet.</p>
       ) : (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2">
           {data.map((a) => (
             <li key={a.id} className="rounded-lg border border-line p-5 text-sm">
-              {a.is_default && <span className="mb-2 inline-block rounded bg-crimson-soft px-2 py-0.5 text-[11px] font-bold text-crimson">DEFAULT</span>}
-              <p className="font-semibold">{a.full_name}</p>
-              <p className="mt-1 text-muted">{a.line1}{a.line2 ? `, ${a.line2}` : ''}<br />{a.city}, {a.state} {a.postal_code}<br />{a.phone}</p>
+              {a.isDefault && <span className="mb-2 inline-block rounded bg-crimson-soft px-2 py-0.5 text-[11px] font-bold text-crimson">DEFAULT</span>}
+              <p className="font-semibold">{a.fullName}</p>
+              <p className="mt-1 text-muted">{a.line1}{a.line2 ? `, ${a.line2}` : ''}<br />{a.city}, {a.state} {a.postalCode}<br />{a.phone}</p>
               <div className="mt-3 flex gap-4 text-xs">
                 <button className="underline hover:text-crimson" onClick={() => setEditing(a)}>Edit</button>
                 <button className="underline hover:text-crimson" onClick={() => remove(a.id)}>Delete</button>
@@ -138,18 +137,21 @@ function Addresses({ userId }) {
 function Profile() {
   const { user, profile, refreshProfile } = useAuth()
   const toast = useToast()
-  const [name, setName] = useState(profile?.full_name || '')
+  const [name, setName] = useState(profile?.fullName || '')
   const [phone, setPhone] = useState(profile?.phone || '')
   const [busy, setBusy] = useState(false)
 
   const submit = async (e) => {
     e.preventDefault()
     setBusy(true)
-    const { error } = await supabase.from('profiles').update({ full_name: name.trim(), phone: phone.trim() }).eq('id', user.id)
+    try {
+      await updateMe({ fullName: name.trim(), phone: phone.trim() })
+      await refreshProfile()
+      toast('Profile updated')
+    } catch (err) {
+      toast(err.message, 'error')
+    }
     setBusy(false)
-    if (error) return toast(error.message, 'error')
-    await refreshProfile()
-    toast('Profile updated')
   }
 
   return (
@@ -168,7 +170,7 @@ export default function Account() {
 
   return (
     <>
-      <PageHeader eyebrow="My account" title={`Hello, ${profile?.full_name?.split(' ')[0] || 'there'}`} subtitle={user.email} />
+      <PageHeader eyebrow="My account" title={`Hello, ${profile?.fullName?.split(' ')[0] || 'there'}`} subtitle={user.email} />
       <div className="container-x py-10">
         <div className="mb-8 flex flex-wrap items-center gap-2 border-b border-line">
           {TABS.map((t) => (
@@ -181,7 +183,8 @@ export default function Account() {
             </button>
           ))}
           <div className="ml-auto flex gap-2 pb-2">
-            {isAdmin && <Link to="/admin" className="btn btn-dark btn-sm">Admin</Link>}
+            <Link to="/wishlist" className="btn btn-outline btn-sm">Wishlist</Link>
+            {isAdmin && <Link to="/admin" className="btn btn-dark btn-sm">Super Admin</Link>}
             <button onClick={signOut} className="btn btn-outline btn-sm">Log out</button>
           </div>
         </div>

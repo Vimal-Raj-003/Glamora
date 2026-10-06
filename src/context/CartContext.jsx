@@ -44,7 +44,7 @@ export function CartProvider({ children }) {
     let cancelled = false
     ;(async () => {
       try {
-        const remote = await fetchRemoteCart(user.id)
+        const remote = await fetchRemoteCart()
         if (cancelled) return
         setItems((local) => {
           const map = new Map(remote.map((r) => [r.productId, r.quantity]))
@@ -64,7 +64,7 @@ export function CartProvider({ children }) {
 
   useEffect(() => {
     if (!enabled || !user || syncedFor.current !== user.id) return
-    const t = setTimeout(() => replaceRemoteCart(user.id, items).catch(() => {}), 600)
+    const t = setTimeout(() => replaceRemoteCart(items).catch(() => {}), 600)
     return () => clearTimeout(t)
   }, [items, user, enabled])
 
@@ -81,7 +81,7 @@ export function CartProvider({ children }) {
     () =>
       items
         .map((i) => ({ ...i, product: products[i.productId] }))
-        .filter((l) => l.product && l.product.is_active !== false),
+        .filter((l) => l.product && l.product.isActive !== false),
     [items, products],
   )
 

@@ -7,9 +7,11 @@ import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
-import { Login, Signup, ForgotPassword, ResetPassword } from './pages/Auth'
+import { Login, Signup } from './pages/AuthPages'
 import Account from './pages/Account'
+import Wishlist from './pages/Wishlist'
 import Admin from './pages/Admin'
+import { Privacy, Terms, Shipping, Returns } from './pages/Policies'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -24,12 +26,15 @@ export default function App() {
         <Route path="cart" element={<Cart />} />
         <Route path="checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
         <Route path="order/:id" element={<RequireAuth><OrderConfirmation /></RequireAuth>} />
-        <Route path="login" element={<Login />} />
-        <Route path="signup" element={<Signup />} />
-        <Route path="forgot-password" element={<ForgotPassword />} />
-        <Route path="reset-password" element={<ResetPassword />} />
+        <Route path="wishlist" element={<RequireAuth><Wishlist /></RequireAuth>} />
+        <Route path="login/*" element={<Login />} />
+        <Route path="signup/*" element={<Signup />} />
         <Route path="account" element={<RequireAuth><Account /></RequireAuth>} />
         <Route path="admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
+        <Route path="privacy-policy" element={<Privacy />} />
+        <Route path="terms-and-conditions" element={<Terms />} />
+        <Route path="shipping-policy" element={<Shipping />} />
+        <Route path="return-refund-policy" element={<Returns />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useAsync } from '../hooks/useAsync'
 import { getProduct, getProducts } from '../lib/api'
 import { useCart } from '../context/CartContext'
+import { useWishlist } from '../context/WishlistContext'
 import { formatPrice, discountPercent } from '../lib/format'
 import QuantityStepper from '../components/QuantityStepper'
 import ProductGrid from '../components/ProductGrid'
@@ -11,6 +12,7 @@ import { Spinner, ErrorBox, Empty } from '../components/ui'
 export default function ProductDetail() {
   const { slug } = useParams()
   const { add } = useCart()
+  const wishlist = useWishlist()
   const [qty, setQty] = useState(1)
   const { data: product, loading, error } = useAsync(() => getProduct(slug), [slug])
   const related = useAsync(
@@ -22,7 +24,7 @@ export default function ProductDetail() {
   if (error) return <div className="container-x py-10"><ErrorBox message={error} /></div>
   if (!product) return <Empty title="Product not found" actionTo="/shop" actionLabel="Back to shop" />
 
-  const off = discountPercent(product.price, product.compare_at_price)
+  const off = discountPercent(product.price, product.compareAtPrice)
   const soldOut = product.stock <= 0
   const lowStock = product.stock > 0 && product.stock <= 10
   const others = (related.data || []).filter((p) => p.id !== product.id).slice(0, 4)
@@ -41,7 +43,7 @@ export default function ProductDetail() {
 
       <div className="grid gap-10 md:grid-cols-2">
         <div className="flex aspect-square items-center justify-center rounded-xl bg-mist p-8">
-          <img src={product.image_url} alt={product.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+          <img src={product.imageUrl} alt={product.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
         </div>
 
         <div>
@@ -51,7 +53,7 @@ export default function ProductDetail() {
             <span className="text-2xl font-bold">{formatPrice(product.price)}</span>
             {off > 0 && (
               <>
-                <span className="text-lg text-muted line-through">{formatPrice(product.compare_at_price)}</span>
+                <span className="text-lg text-muted line-through">{formatPrice(product.compareAtPrice)}</span>
                 <span className="rounded bg-crimson-soft px-2 py-0.5 text-xs font-bold text-crimson">{off}% OFF</span>
               </>
             )}
@@ -68,6 +70,9 @@ export default function ProductDetail() {
             <QuantityStepper value={qty} max={product.stock} onChange={(v) => setQty(Math.max(1, v))} />
             <button onClick={() => add(product, qty)} disabled={soldOut} className="btn btn-primary flex-1 sm:flex-none sm:px-12">
               Add to cart
+            </button>
+            <button onClick={() => wishlist.toggle(product)} aria-pressed={wishlist.has(product.id)} className="btn btn-outline">
+              {wishlist.has(product.id) ? '♥ Saved' : '♡ Wishlist'}
             </button>
           </div>
 

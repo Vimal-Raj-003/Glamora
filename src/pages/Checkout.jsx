@@ -8,7 +8,7 @@ import { formatPrice } from '../lib/format'
 import { INDIAN_STATES, validateAddress as validate } from '../lib/india'
 import { PageHeader, Field, ErrorBox, Empty, Spinner } from '../components/ui'
 
-const EMPTY = { full_name: '', phone: '', line1: '', line2: '', city: '', state: '', postal_code: '' }
+const EMPTY = { fullName: '', phone: '', line1: '', line2: '', city: '', state: '', postalCode: '' }
 
 function loadRazorpay() {
   return new Promise((resolve, reject) => {
@@ -36,17 +36,17 @@ export default function Checkout() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    getAddresses(user.id)
+    getAddresses()
       .then((list) => {
         setSaved(list)
-        const def = list.find((a) => a.is_default) || list[0]
+        const def = list.find((a) => a.isDefault) || list[0]
         if (def) setSelected(def.id)
       })
       .catch(() => setSaved([]))
   }, [user.id])
 
   useEffect(() => {
-    if (profile?.full_name) setForm((f) => (f.full_name ? f : { ...f, full_name: profile.full_name }))
+    if (profile?.fullName) setForm((f) => (f.fullName ? f : { ...f, fullName: profile.fullName }))
   }, [profile])
 
   if (lines.length === 0) {
@@ -67,25 +67,25 @@ export default function Checkout() {
       address = { ...form, country: 'India' }
     } else {
       const a = saved.find((x) => x.id === selected)
-      address = { full_name: a.full_name, phone: a.phone, line1: a.line1, line2: a.line2, city: a.city, state: a.state, postal_code: a.postal_code, country: a.country }
+      address = { fullName: a.fullName, phone: a.phone, line1: a.line1, line2: a.line2, city: a.city, state: a.state, postalCode: a.postalCode, country: a.country }
     }
 
     setBusy(true)
     try {
       if (selected === 'new' && saveForLater) {
-        await saveAddress(user.id, { ...address, is_default: saved.length === 0 }).catch(() => {})
+        await saveAddress({ ...address, isDefault: saved.length === 0 }).catch(() => {})
       }
       const order = await createOrder(lines, address)
       await loadRazorpay()
 
       const rzp = new window.Razorpay({
-        key: order.key_id,
+        key: order.keyId,
         amount: order.amount,
         currency: 'INR',
         name: 'Glamora',
-        description: `Order #${order.order_id.slice(0, 8)}`,
-        order_id: order.razorpay_order_id,
-        prefill: { name: address.full_name, email: user.email, contact: address.phone },
+        description: `Order #${order.orderId.slice(0, 8).toUpperCase()}`,
+        order_id: order.razorpayOrderId,
+        prefill: { name: address.fullName, email: user.email, contact: address.phone },
         theme: { color: '#c8102e' },
         modal: {
           ondismiss: () => {
@@ -96,13 +96,13 @@ export default function Checkout() {
         handler: async (resp) => {
           try {
             await verifyPayment({
-              order_id: order.order_id,
-              razorpay_order_id: resp.razorpay_order_id,
-              razorpay_payment_id: resp.razorpay_payment_id,
-              razorpay_signature: resp.razorpay_signature,
+              orderId: order.orderId,
+              razorpayOrderId: resp.razorpay_order_id,
+              razorpayPaymentId: resp.razorpay_payment_id,
+              razorpaySignature: resp.razorpay_signature,
             })
             clear()
-            navigate(`/order/${order.order_id}`, { replace: true })
+            navigate(`/order/${order.orderId}`, { replace: true })
           } catch (err) {
             setBusy(false)
             setError(`Payment received but could not be verified: ${err.message}. Please contact support with payment ID ${resp.razorpay_payment_id}.`)
@@ -134,8 +134,8 @@ export default function Checkout() {
                   <label key={a.id} className={`flex cursor-pointer gap-3 rounded-lg border p-4 text-sm ${selected === a.id ? 'border-crimson bg-crimson-soft/40' : 'border-line'}`}>
                     <input type="radio" name="address" className="mt-1 accent-crimson" checked={selected === a.id} onChange={() => setSelected(a.id)} />
                     <span>
-                      <strong>{a.full_name}</strong> · {a.phone}<br />
-                      {a.line1}{a.line2 ? `, ${a.line2}` : ''}, {a.city}, {a.state} {a.postal_code}
+                      <strong>{a.fullName}</strong> · {a.phone}<br />
+                      {a.line1}{a.line2 ? `, ${a.line2}` : ''}, {a.city}, {a.state} {a.postalCode}
                     </span>
                   </label>
                 ))}
@@ -148,7 +148,7 @@ export default function Checkout() {
 
             {selected === 'new' && (
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <Field label="Full name" error={errors.full_name}><input autoComplete="name" className="input" {...set('full_name')} /></Field>
+                <Field label="Full name" error={errors.fullName}><input autoComplete="name" className="input" {...set('fullName')} /></Field>
                 <Field label="Mobile number" error={errors.phone}><input inputMode="numeric" maxLength={10} autoComplete="tel-national" className="input" {...set('phone')} /></Field>
                 <div className="sm:col-span-2"><Field label="Address line 1" error={errors.line1}><input autoComplete="address-line1" className="input" {...set('line1')} /></Field></div>
                 <div className="sm:col-span-2"><Field label="Address line 2 (optional)"><input autoComplete="address-line2" className="input" {...set('line2')} /></Field></div>
@@ -159,7 +159,7 @@ export default function Checkout() {
                     {INDIAN_STATES.map((s) => <option key={s}>{s}</option>)}
                   </select>
                 </Field>
-                <Field label="PIN code" error={errors.postal_code}><input inputMode="numeric" maxLength={6} autoComplete="postal-code" className="input" {...set('postal_code')} /></Field>
+                <Field label="PIN code" error={errors.postalCode}><input inputMode="numeric" maxLength={6} autoComplete="postal-code" className="input" {...set('postalCode')} /></Field>
                 <label className="flex items-center gap-2 text-sm sm:col-span-2">
                   <input type="checkbox" checked={saveForLater} onChange={(e) => setSaveForLater(e.target.checked)} className="h-4 w-4 accent-crimson" />
                   Save this address for next time
@@ -187,6 +187,11 @@ export default function Checkout() {
           {error && <div className="mt-4"><ErrorBox message={error} /></div>}
           <button className="btn btn-primary mt-5 w-full" disabled={busy}>{busy ? 'Processing…' : `Pay ${formatPrice(total)}`}</button>
           <p className="mt-3 text-center text-xs text-muted">Secure payment via Razorpay (UPI, cards, netbanking, wallets)</p>
+          <p className="mt-2 text-center text-xs text-muted">
+            By placing your order you agree to our <Link to="/terms-and-conditions" className="underline hover:text-crimson">Terms</Link>,{' '}
+            <Link to="/shipping-policy" className="underline hover:text-crimson">Shipping</Link> and{' '}
+            <Link to="/return-refund-policy" className="underline hover:text-crimson">Return &amp; Refund</Link> policies.
+          </p>
           <Link to="/cart" className="mt-2 block text-center text-xs text-muted underline hover:text-crimson">Edit cart</Link>
         </aside>
       </form>

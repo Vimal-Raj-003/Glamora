@@ -18,7 +18,7 @@ export default function Cart() {
             {lines.map((l) => (
               <li key={l.productId} className="flex gap-4 py-5 sm:gap-6">
                 <Link to={`/product/${l.product.slug}`}>
-                  <img src={l.product.image_url} alt={l.product.name} className="h-24 w-24 rounded bg-mist object-contain p-2 mix-blend-multiply sm:h-28 sm:w-28" />
+                  <img src={l.product.imageUrl} alt={l.product.name} className="h-24 w-24 rounded bg-mist object-contain p-2 mix-blend-multiply sm:h-28 sm:w-28" />
                 </Link>
                 <div className="flex flex-1 flex-col justify-between sm:flex-row sm:items-center">
                   <div>

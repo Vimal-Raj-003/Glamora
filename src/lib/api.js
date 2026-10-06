@@ -1,189 +1,71 @@
-import { supabase, isSupabaseConfigured } from './supabase'
-import { SEED_CATEGORIES, SEED_PRODUCTS } from '../data/seed'
+// Thin client for the Glamora API (Express + Prisma + Neon). All calls go to /api/*.
 
-const PRODUCT_SELECT = '*, category:categories(slug, name)'
-
-const SORTS = {
-  popular: { column: 'popularity', ascending: false },
-  newest: { column: 'created_at', ascending: false },
-  'price-asc': { column: 'price', ascending: true },
-  'price-desc': { column: 'price', ascending: false },
+let tokenGetter = null
+export const setTokenGetter = (fn) => {
+  tokenGetter = fn
 }
 
-const withSeedCategory = (prod) => {
-  const c = SEED_CATEGORIES.find((x) => x.id === prod.category_id)
-  return { ...prod, category: c ? { slug: c.slug, name: c.name } : null }
-}
+async function request(path, { method = 'GET', body, query } = {}) {
+  const headers = {}
+  if (body !== undefined) headers['Content-Type'] = 'application/json'
 
-const unwrap = ({ data, error }) => {
-  if (error) throw new Error(error.message)
+  const token = tokenGetter ? await tokenGetter().catch(() => null) : null
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const qs = query ? new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString() : ''
+  let res
+  try {
+    res = await fetch(`/api${path}${qs ? `?${qs}` : ''}`, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined })
+  } catch {
+    throw new Error('Cannot reach the server. Please check your connection and try again.')
+  }
+  const data = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`)
   return data
 }
 
 // ---------- Catalogue ----------
+export const getCategories = () => request('/categories')
 
-export async function getCategories() {
-  if (!isSupabaseConfigured) return SEED_CATEGORIES
-  return unwrap(await supabase.from('categories').select('*').order('sort_order'))
+export const getProducts = ({ categorySlug, search, sort, featured, limit } = {}) =>
+  request('/products', { query: { category: categorySlug, search, sort, featured: featured ? '1' : undefined, limit } })
+
+export const getProduct = (slug) => request(`/products/${encodeURIComponent(slug)}`).catch((e) => (/not found/i.test(e.message) ? null : Promise.reject(e)))
+
+export const getProductsByIds = (ids) => (ids.length ? request('/products', { query: { ids: ids.join(',') } }) : Promise.resolve([]))
+
+// ---------- Account ----------
+export const getMe = () => request('/me')
+export const updateMe = (data) => request('/me', { method: 'PATCH', body: data })
+
+export const fetchRemoteCart = () => request('/cart')
+export const replaceRemoteCart = (items) => request('/cart', { method: 'PUT', body: { items } })
+
+export const getWishlist = () => request('/wishlist')
+export const addToWishlist = (productId) => request(`/wishlist/${productId}`, { method: 'PUT' })
+export const removeFromWishlist = (productId) => request(`/wishlist/${productId}`, { method: 'DELETE' })
+
+export const getAddresses = () => request('/addresses')
+export const saveAddress = (address) => {
+  const { id, ...data } = address
+  return id ? request(`/addresses/${id}`, { method: 'PUT', body: data }) : request('/addresses', { method: 'POST', body: data })
 }
+export const deleteAddress = (id) => request(`/addresses/${id}`, { method: 'DELETE' })
 
-export async function getProducts({ categorySlug, search, sort = 'popular', featured, limit, includeInactive = false } = {}) {
-  if (!isSupabaseConfigured) {
-    let list = SEED_PRODUCTS.map(withSeedCategory)
-    if (categorySlug) list = list.filter((x) => x.category?.slug === categorySlug)
-    if (featured) list = list.filter((x) => x.is_featured)
-    if (search) {
-      const q = search.toLowerCase()
-      list = list.filter((x) => x.name.toLowerCase().includes(q) || x.description.toLowerCase().includes(q))
-    }
-    const s = SORTS[sort] || SORTS.popular
-    list.sort((a, b) => {
-      const av = s.column === 'created_at' ? new Date(a.created_at) : a[s.column]
-      const bv = s.column === 'created_at' ? new Date(b.created_at) : b[s.column]
-      return s.ascending ? av - bv : bv - av
-    })
-    return limit ? list.slice(0, limit) : list
-  }
+// ---------- Orders & payments ----------
+export const getMyOrders = () => request('/orders')
+export const getOrder = (id) => request(`/orders/${id}`)
+export const createOrder = (items, address) => request('/orders', { method: 'POST', body: { items, address } })
+export const verifyPayment = (payload) => request('/orders/verify', { method: 'POST', body: payload })
 
-  let categoryId
-  if (categorySlug) {
-    const cat = unwrap(await supabase.from('categories').select('id').eq('slug', categorySlug).maybeSingle())
-    if (!cat) return []
-    categoryId = cat.id
-  }
-
-  const s = SORTS[sort] || SORTS.popular
-  let q = supabase.from('products').select(PRODUCT_SELECT).order(s.column, { ascending: s.ascending })
-  if (!includeInactive) q = q.eq('is_active', true)
-  if (categoryId) q = q.eq('category_id', categoryId)
-  if (featured) q = q.eq('is_featured', true)
-  if (search) {
-    const safe = search.replace(/[,()%*]/g, ' ').trim()
-    if (safe) q = q.or(`name.ilike.%${safe}%,description.ilike.%${safe}%`)
-  }
-  if (limit) q = q.limit(limit)
-  return unwrap(await q)
+// ---------- Admin (Super Admin only) ----------
+export const adminGetStats = () => request('/admin/stats')
+export const adminGetProducts = () => request('/admin/products')
+export const adminSaveProduct = (product) => {
+  const { id, ...data } = product
+  return id ? request(`/admin/products/${id}`, { method: 'PUT', body: data }) : request('/admin/products', { method: 'POST', body: data })
 }
-
-export async function getProduct(slug) {
-  if (!isSupabaseConfigured) {
-    const prod = SEED_PRODUCTS.find((x) => x.slug === slug)
-    return prod ? withSeedCategory(prod) : null
-  }
-  return unwrap(await supabase.from('products').select(PRODUCT_SELECT).eq('slug', slug).eq('is_active', true).maybeSingle())
-}
-
-export async function getProductsByIds(ids) {
-  if (!ids.length) return []
-  if (!isSupabaseConfigured) return SEED_PRODUCTS.filter((x) => ids.includes(x.id)).map(withSeedCategory)
-  return unwrap(await supabase.from('products').select(PRODUCT_SELECT).in('id', ids))
-}
-
-// ---------- Cart sync ----------
-
-export async function fetchRemoteCart(userId) {
-  const rows = unwrap(await supabase.from('cart_items').select('product_id, quantity').eq('user_id', userId))
-  return rows.map((r) => ({ productId: r.product_id, quantity: r.quantity }))
-}
-
-export async function replaceRemoteCart(userId, items) {
-  unwrap(await supabase.from('cart_items').delete().eq('user_id', userId))
-  if (items.length) {
-    unwrap(
-      await supabase.from('cart_items').insert(items.map((i) => ({ user_id: userId, product_id: i.productId, quantity: i.quantity }))),
-    )
-  }
-}
-
-// ---------- Addresses ----------
-
-export async function getAddresses(userId) {
-  return unwrap(await supabase.from('addresses').select('*').eq('user_id', userId).order('created_at', { ascending: false }))
-}
-
-export async function saveAddress(userId, address) {
-  const payload = { ...address, user_id: userId }
-  if (payload.id) {
-    return unwrap(await supabase.from('addresses').update(payload).eq('id', payload.id).select().single())
-  }
-  delete payload.id
-  return unwrap(await supabase.from('addresses').insert(payload).select().single())
-}
-
-export async function deleteAddress(id) {
-  unwrap(await supabase.from('addresses').delete().eq('id', id))
-}
-
-// ---------- Orders ----------
-
-export async function getMyOrders(userId) {
-  return unwrap(
-    await supabase.from('orders').select('*, items:order_items(*)').eq('user_id', userId).order('created_at', { ascending: false }),
-  )
-}
-
-export async function getOrder(id) {
-  return unwrap(await supabase.from('orders').select('*, items:order_items(*)').eq('id', id).maybeSingle())
-}
-
-export async function createOrder(items, address) {
-  const { data, error } = await supabase.functions.invoke('create-order', {
-    body: { items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })), address },
-  })
-  if (error) throw new Error(await edgeError(error))
-  if (data?.error) throw new Error(data.error)
-  return data
-}
-
-export async function verifyPayment(payload) {
-  const { data, error } = await supabase.functions.invoke('verify-payment', { body: payload })
-  if (error) throw new Error(await edgeError(error))
-  if (data?.error) throw new Error(data.error)
-  return data
-}
-
-async function edgeError(error) {
-  try {
-    const body = await error.context.json()
-    return body.error || error.message
-  } catch {
-    return error.message
-  }
-}
-
-// ---------- Admin ----------
-
-export async function adminSaveProduct(product) {
-  const payload = { ...product }
-  delete payload.category
-  if (payload.id) {
-    return unwrap(await supabase.from('products').update(payload).eq('id', payload.id).select().single())
-  }
-  delete payload.id
-  return unwrap(await supabase.from('products').insert(payload).select().single())
-}
-
-export async function adminDeleteProduct(id) {
-  unwrap(await supabase.from('products').delete().eq('id', id))
-}
-
-export async function adminUploadImage(file) {
-  const ext = file.name.split('.').pop()
-  const path = `${crypto.randomUUID()}.${ext}`
-  const { error } = await supabase.storage.from('product-images').upload(path, file, { cacheControl: '31536000' })
-  if (error) throw new Error(error.message)
-  return supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl
-}
-
-export async function adminGetOrders() {
-  return unwrap(
-    await supabase
-      .from('orders')
-      .select('*, items:order_items(*), profile:profiles(full_name, phone)')
-      .order('created_at', { ascending: false }),
-  )
-}
-
-export async function adminUpdateOrderStatus(id, status) {
-  unwrap(await supabase.from('orders').update({ status }).eq('id', id))
-}
+export const adminDeleteProduct = (id) => request(`/admin/products/${id}`, { method: 'DELETE' })
+export const adminGetOrders = () => request('/admin/orders')
+export const adminUpdateOrderStatus = (id, status) => request(`/admin/orders/${id}/status`, { method: 'PATCH', body: { status } })
+export const adminGetCustomers = () => request('/admin/customers')

@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { useAsync } from '../hooks/useAsync'
-import { getCategories } from '../lib/api'
-import { SEED_CATEGORIES } from '../data/seed'
+import { useWishlist } from '../context/WishlistContext'
+import { CATEGORY_LINKS } from '../config/store'
 
 const Icon = ({ d, className = 'h-5 w-5' }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
@@ -18,8 +17,8 @@ export default function Header() {
   const navigate = useNavigate()
   const [menu, setMenu] = useState(false)
   const [q, setQ] = useState('')
-  const { data } = useAsync(getCategories, [])
-  const categories = data || SEED_CATEGORIES
+  const wishlist = useWishlist()
+  const categories = CATEGORY_LINKS
 
   const submit = (e) => {
     e.preventDefault()
@@ -78,13 +77,22 @@ export default function Header() {
                 </Link>
                 <div className="invisible absolute right-0 top-full w-44 rounded-md bg-white py-2 text-sm text-ink opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                   <Link to="/account" className="block px-4 py-2 hover:bg-mist">My account</Link>
-                  {isAdmin && <Link to="/admin" className="block px-4 py-2 hover:bg-mist">Admin</Link>}
+                  <Link to="/wishlist" className="block px-4 py-2 hover:bg-mist">Wishlist</Link>
+                  {isAdmin && <Link to="/admin" className="block px-4 py-2 hover:bg-mist">Super Admin</Link>}
                   <button onClick={signOut} className="block w-full px-4 py-2 text-left hover:bg-mist">Log out</button>
                 </div>
               </div>
             ) : (
               <Link to="/login" className="rounded-full px-3 py-2 text-sm font-medium hover:bg-white/10">Log in</Link>
             ))}
+          {enabled && (
+            <Link to="/wishlist" className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/10" aria-label={`Wishlist, ${wishlist.count} items`}>
+              <Icon d="M12 20.5s-7.5-4.6-9.2-9.3C1.7 8 3.6 5 6.8 5c1.9 0 3.4 1 4.2 2.4h2C13.8 6 15.3 5 17.2 5c3.2 0 5.1 3 4 6.2-1.7 4.7-9.2 9.3-9.2 9.3z" />
+              {wishlist.count > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-crimson px-1 text-[11px] font-bold">{wishlist.count}</span>
+              )}
+            </Link>
+          )}
           <button onClick={() => setOpen(true)} className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-white/10" aria-label={`Open cart, ${count} items`}>
             <Icon d="M6 7h12l-1 12H7L6 7zM9 7a3 3 0 016 0" />
             {count > 0 && (

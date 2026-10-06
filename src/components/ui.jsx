@@ -52,11 +52,3 @@ export function Field({ label, error, children }) {
   )
 }
 
-export function DemoNotice() {
-  return (
-    <div className="rounded-md border border-line bg-mist px-4 py-3 text-sm text-muted">
-      Supabase isn’t configured yet, so the store is running in <strong>demo mode</strong>. Add your keys to
-      <code className="mx-1 rounded bg-white px-1.5 py-0.5 text-xs">.env</code> to enable sign-in, checkout and admin.
-    </div>
-  )
-}

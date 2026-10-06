@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAsync } from '../hooks/useAsync'
 import { getCategories, getProducts } from '../lib/api'
 import ProductGrid from '../components/ProductGrid'
-import { Spinner, ErrorBox, DemoNotice } from '../components/ui'
-import { isSupabaseConfigured } from '../lib/supabase'
+import { Spinner, ErrorBox } from '../components/ui'
 
 const PERKS = [
   { title: 'Free shipping', text: 'On all orders above ₹999' },
@@ -58,7 +57,7 @@ export default function Home() {
           <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
             {cats.data.map((c) => (
               <Link key={c.id} to={`/category/${c.slug}`} className="group relative aspect-[3/4] overflow-hidden rounded-lg bg-mist">
-                <img src={c.image_url} alt="" loading="lazy" className="h-full w-full object-contain p-6 mix-blend-multiply transition duration-500 group-hover:scale-105" />
+                <img src={c.imageUrl} alt="" loading="lazy" className="h-full w-full object-contain p-6 mix-blend-multiply transition duration-500 group-hover:scale-105" />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 to-transparent p-4 pt-12 text-white">
                   <h3 className="font-serif text-xl font-semibold">{c.name}</h3>
                   <span className="text-xs tracking-wider text-white/80 group-hover:text-crimson">Shop now →</span>
@@ -115,11 +114,6 @@ export default function Home() {
         </div>
       </section>
 
-      {!isSupabaseConfigured && (
-        <div className="container-x mt-10">
-          <DemoNotice />
-        </div>
-      )}
     </>
   )
 }

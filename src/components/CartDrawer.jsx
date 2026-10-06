@@ -47,7 +47,7 @@ export default function CartDrawer() {
             <ul className="flex-1 divide-y divide-line overflow-y-auto px-5">
               {lines.map((l) => (
                 <li key={l.productId} className="flex gap-4 py-4">
-                  <img src={l.product.image_url} alt="" className="h-20 w-20 shrink-0 rounded bg-mist object-contain p-1 mix-blend-multiply" />
+                  <img src={l.product.imageUrl} alt="" className="h-20 w-20 shrink-0 rounded bg-mist object-contain p-1 mix-blend-multiply" />
                   <div className="flex-1">
                     <Link to={`/product/${l.product.slug}`} onClick={() => setOpen(false)} className="text-sm font-medium hover:text-crimson">
                       {l.product.name}
