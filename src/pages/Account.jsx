@@ -8,27 +8,11 @@ import { formatPrice, formatDate } from '../lib/format'
 import { INDIAN_STATES, validateAddress } from '../lib/india'
 import { PageHeader, Spinner, ErrorBox, Empty, Field } from '../components/ui'
 import PayNowButton from '../components/PayNowButton'
+import { STATUS_STYLES, STATUS_LABELS } from '../lib/status'
 
 const TABS = ['Orders', 'Addresses', 'Profile']
 
-export const STATUS_STYLES = {
-  pending: 'bg-mist text-muted',
-  paid: 'bg-emerald-100 text-emerald-700',
-  processing: 'bg-amber-100 text-amber-700',
-  shipped: 'bg-sky-100 text-sky-700',
-  delivered: 'bg-ink text-white',
-  cancelled: 'bg-crimson-soft text-crimson',
-}
-
-// "paid" is shown to people as "Confirmed"; "pending" means the payment has not been received yet.
-export const STATUS_LABELS = {
-  pending: 'Awaiting payment',
-  paid: 'Confirmed',
-  processing: 'Processing',
-  shipped: 'Shipped',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
-}
+export { STATUS_STYLES, STATUS_LABELS }
 
 function Orders({ userId }) {
   const [version, setVersion] = useState(0)
@@ -144,8 +128,8 @@ function Addresses({ userId }) {
               <p className="font-semibold">{a.fullName}</p>
               <p className="mt-1 text-muted">{a.line1}{a.line2 ? `, ${a.line2}` : ''}<br />{a.city}, {a.state} {a.postalCode}<br />{a.phone}</p>
               <div className="mt-3 flex gap-4 text-xs">
-                <button className="underline hover:text-crimson" onClick={() => setEditing(a)}>Edit</button>
-                <button className="underline hover:text-crimson" onClick={() => remove(a.id)}>Delete</button>
+                <button className="link-btn" onClick={() => setEditing(a)}>Edit</button>
+                <button className="link-btn" onClick={() => remove(a.id)}>Delete</button>
               </div>
             </li>
           ))}

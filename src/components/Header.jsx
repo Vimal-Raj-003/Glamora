@@ -36,11 +36,11 @@ export default function Header() {
         Free shipping on orders above ₹999
       </div>
       <div className="container-x flex h-16 items-center gap-4">
-        <button className="lg:hidden" onClick={() => setMenu(!menu)} aria-label="Toggle menu" aria-expanded={menu}>
+        <button className="-ml-2 flex h-11 w-11 items-center justify-center lg:hidden" onClick={() => setMenu(!menu)} aria-label="Toggle menu" aria-expanded={menu}>
           <Icon d={menu ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'} className="h-6 w-6" />
         </button>
 
-        <Link to="/" className="font-serif text-2xl font-bold tracking-[0.18em]">
+        <Link to="/" className="inline-block py-2 font-serif text-2xl font-bold tracking-[0.18em]">
           GLAM<span className="text-crimson">ORA</span>
         </Link>
 
@@ -62,7 +62,7 @@ export default function Header() {
               aria-label="Search products"
               className="w-56 rounded-full border border-white/20 bg-white/10 py-2 pl-4 pr-10 text-sm text-white outline-none placeholder:text-white/50 focus:border-crimson"
             />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white" aria-label="Search">
+            <button className="absolute right-0.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-white/70 hover:text-white" aria-label="Search">
               <Icon d="M11 18a7 7 0 100-14 7 7 0 000 14zM21 21l-4.3-4.3" className="h-4 w-4" />
             </button>
           </div>

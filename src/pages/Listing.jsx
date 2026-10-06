@@ -42,21 +42,21 @@ export default function Listing({ mode }) {
     <>
       <PageHeader eyebrow={mode === 'search' ? 'Search' : 'Collection'} title={title} subtitle={subtitle} />
       <div className="container-x py-10">
-        <div className="mb-8 flex flex-wrap items-end gap-4 border-b border-line pb-5">
-          <p className="mr-auto text-sm text-muted" aria-live="polite">
+        <div className="mb-8 grid grid-cols-2 items-end gap-3 border-b border-line pb-5 sm:flex sm:flex-wrap sm:gap-4">
+          <p className="col-span-2 text-sm text-muted sm:mr-auto" aria-live="polite">
             {loading ? 'Loading…' : `${products.length} product${products.length === 1 ? '' : 's'}`}
           </p>
-          <div>
+          <div className="order-1">
             <label className="label" htmlFor="maxPrice">Max price (₹)</label>
-            <input id="maxPrice" type="number" min="0" inputMode="numeric" placeholder="Any" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="input w-32" />
+            <input id="maxPrice" type="number" min="0" inputMode="numeric" placeholder="Any" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="input w-full sm:w-32" />
           </div>
-          <label className="flex items-center gap-2 pb-2.5 text-sm">
+          <label className="order-3 col-span-2 flex min-h-10 items-center gap-2 text-sm sm:order-2 sm:col-span-1 sm:pb-1">
             <input type="checkbox" checked={inStock} onChange={(e) => setInStock(e.target.checked)} className="h-4 w-4 accent-crimson" />
             In stock only
           </label>
-          <div>
+          <div className="order-2 sm:order-3">
             <label className="label" htmlFor="sort">Sort by</label>
-            <select id="sort" value={sort} onChange={(e) => setSort(e.target.value)} className="input w-48">
+            <select id="sort" value={sort} onChange={(e) => setSort(e.target.value)} className="input w-full sm:w-48">
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}

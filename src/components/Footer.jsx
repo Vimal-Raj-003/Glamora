@@ -20,34 +20,35 @@ export default function Footer() {
             Premium makeup for every face. Bold colour, flawless finish and formulas you can trust.
           </p>
           <p className="mt-4 text-sm text-white/60">
-            {STORE.supportEmail}<br />{STORE.supportPhone}
+            <a href={`mailto:${STORE.supportEmail}`} className="hover:text-crimson">{STORE.supportEmail}</a><br />
+            <a href={`tel:${STORE.supportPhoneTel}`} className="inline-block py-2 hover:text-crimson">{STORE.supportPhone}</a>
           </p>
         </div>
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Shop</h4>
-          <ul className="mt-4 space-y-2.5 text-sm">
+          <ul className="mt-3 space-y-0 text-sm">
             {CATEGORY_LINKS.map((c) => (
               <li key={c.id}>
-                <Link to={`/category/${c.slug}`} className="text-white/80 hover:text-crimson">{c.name}</Link>
+                <Link to={`/category/${c.slug}`} className="inline-block py-2.5 text-white/80 hover:text-crimson">{c.name}</Link>
               </li>
             ))}
           </ul>
         </div>
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Account</h4>
-          <ul className="mt-4 space-y-2.5 text-sm">
-            <li><Link to="/account" className="text-white/80 hover:text-crimson">My orders</Link></li>
-            <li><Link to="/wishlist" className="text-white/80 hover:text-crimson">Wishlist</Link></li>
-            <li><Link to="/cart" className="text-white/80 hover:text-crimson">Cart</Link></li>
-            <li><Link to="/login" className="text-white/80 hover:text-crimson">Log in</Link></li>
+          <ul className="mt-3 space-y-0 text-sm">
+            <li><Link to="/account" className="inline-block py-2.5 text-white/80 hover:text-crimson">My orders</Link></li>
+            <li><Link to="/wishlist" className="inline-block py-2.5 text-white/80 hover:text-crimson">Wishlist</Link></li>
+            <li><Link to="/cart" className="inline-block py-2.5 text-white/80 hover:text-crimson">Cart</Link></li>
+            <li><Link to="/login" className="inline-block py-2.5 text-white/80 hover:text-crimson">Log in</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Policies</h4>
-          <ul className="mt-4 space-y-2.5 text-sm">
+          <ul className="mt-3 space-y-0 text-sm">
             {POLICIES.map((p) => (
               <li key={p.to}>
-                <Link to={p.to} className="text-white/80 hover:text-crimson">{p.label}</Link>
+                <Link to={p.to} className="inline-block py-2.5 text-white/80 hover:text-crimson">{p.label}</Link>
               </li>
             ))}
           </ul>

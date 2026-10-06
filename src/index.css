@@ -34,10 +34,12 @@
   .btn-dark { @apply bg-ink text-white hover:bg-graphite; }
   .btn-outline { @apply border border-ink text-ink hover:bg-ink hover:text-white; }
   .btn-ghost { @apply text-ink hover:bg-mist; }
-  .btn-sm { @apply px-3.5 py-2 text-xs; }
+  .btn-sm { @apply min-h-10 px-3.5 py-2.5 text-xs; }
+  /* text-style buttons (Remove, Edit, Delete...) with a thumb-sized tap area */
+  .link-btn { @apply inline-flex min-h-10 items-center px-1.5 text-xs underline hover:text-crimson; }
 
   .input {
-    @apply w-full rounded-md border border-line bg-white px-3.5 py-2.5 text-sm outline-none transition
+    @apply w-full rounded-md border border-line bg-white px-3.5 py-2.5 text-base outline-none transition sm:text-sm
       placeholder:text-muted/70 focus:border-crimson focus:ring-2 focus:ring-crimson/20;
   }
   .label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted; }

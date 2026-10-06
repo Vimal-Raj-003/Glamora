@@ -8,6 +8,7 @@ import { startPayment, confirmOnServer } from '../lib/razorpay'
 import { formatPrice } from '../lib/format'
 import { INDIAN_STATES, validateAddress as validate } from '../lib/india'
 import { PageHeader, Field, ErrorBox, Empty, Spinner } from '../components/ui'
+import { ChatHelpButton } from '../components/ChatWidget'
 
 const EMPTY = { fullName: '', phone: '', line1: '', line2: '', city: '', state: '', postalCode: '' }
 
@@ -188,7 +189,8 @@ export default function Checkout() {
             <Link to="/shipping-policy" className="underline hover:text-crimson">Shipping</Link> and{' '}
             <Link to="/return-refund-policy" className="underline hover:text-crimson">Return &amp; Refund</Link> policies.
           </p>
-          <Link to="/cart" className="mt-2 block text-center text-xs text-muted underline hover:text-crimson">Edit cart</Link>
+          <Link to="/cart" className="mt-2 block py-3 text-center text-xs text-muted underline hover:text-crimson">Edit cart</Link>
+          <div className="text-center"><ChatHelpButton /></div>
         </aside>
       </form>
     </>

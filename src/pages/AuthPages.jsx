@@ -32,7 +32,7 @@ export function Login() {
         </>
       }
     >
-      <SignIn routing="path" path="/login" signUpUrl="/signup" fallbackRedirectUrl="/account" />
+      <SignIn routing="path" path="/login" signUpUrl="/signup" fallbackRedirectUrl="/shop" />
     </Shell>
   )
 }
@@ -48,7 +48,7 @@ export function Signup() {
         </>
       }
     >
-      <SignUp routing="path" path="/signup" signInUrl="/login" fallbackRedirectUrl="/account" />
+      <SignUp routing="path" path="/signup" signInUrl="/login" fallbackRedirectUrl="/shop" />
     </Shell>
   )
 }

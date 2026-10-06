@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext'
 import { formatPrice, FREE_SHIPPING_THRESHOLD, maxQuantity } from '../lib/format'
 import QuantityStepper from '../components/QuantityStepper'
 import { PageHeader, Empty } from '../components/ui'
+import { ChatHelpButton } from '../components/ChatWidget'
 
 export default function Cart() {
   const { lines, subtotal, shipping, total, setQuantity, remove } = useCart()
@@ -24,7 +25,7 @@ export default function Cart() {
                   <div>
                     <Link to={`/product/${l.product.slug}`} className="font-medium hover:text-crimson">{l.product.name}</Link>
                     <p className="mt-1 text-sm text-muted">{formatPrice(l.product.price)}</p>
-                    <button onClick={() => remove(l.productId)} className="mt-2 text-xs text-muted underline hover:text-crimson">Remove</button>
+                    <button onClick={() => remove(l.productId)} className="link-btn -ml-1.5 mt-1 text-muted">Remove</button>
                   </div>
                   <div className="mt-3 flex items-center gap-6 sm:mt-0">
                     <QuantityStepper value={l.quantity} max={maxQuantity(l.product)} onChange={(q) => setQuantity(l.productId, q)} />
@@ -47,6 +48,7 @@ export default function Cart() {
             )}
             <Link to="/checkout" className="btn btn-primary mt-6 w-full">Proceed to checkout</Link>
             <Link to="/shop" className="btn btn-ghost mt-2 w-full">Continue shopping</Link>
+            <div className="mt-1 text-center"><ChatHelpButton /></div>
           </aside>
         </div>
       )}

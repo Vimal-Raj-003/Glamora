@@ -58,7 +58,7 @@ export default function CartDrawer() {
                     <p className="mt-0.5 text-sm text-muted">{formatPrice(l.product.price)}</p>
                     <div className="mt-2 flex items-center justify-between">
                       <QuantityStepper value={l.quantity} max={maxQuantity(l.product)} onChange={(q) => setQuantity(l.productId, q)} />
-                      <button onClick={() => remove(l.productId)} className="text-xs text-muted underline hover:text-crimson">Remove</button>
+                      <button onClick={() => remove(l.productId)} className="link-btn text-muted">Remove</button>
                     </div>
                   </div>
                 </li>

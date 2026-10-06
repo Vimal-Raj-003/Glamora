@@ -75,7 +75,7 @@ export default function Home() {
             <p className="eyebrow">Bestsellers</p>
             <h2 className="section-title mt-2">Featured products</h2>
           </div>
-          <Link to="/shop" className="text-sm font-semibold underline underline-offset-4 hover:text-crimson">View all</Link>
+          <Link to="/shop" className="inline-flex min-h-10 items-center text-sm font-semibold underline underline-offset-4 hover:text-crimson">View all</Link>
         </div>
         {featured.loading ? <Spinner /> : featured.error ? <ErrorBox message={featured.error} /> : <ProductGrid products={featured.data} />}
       </section>

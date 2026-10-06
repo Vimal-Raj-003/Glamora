@@ -21,7 +21,7 @@ export default function ProductCard({ product }) {
             className="h-full w-full object-contain p-4 mix-blend-multiply transition duration-500 group-hover:scale-105"
           />
           {(product.offerLabel || off > 0) && !soldOut && (
-            <span className="absolute left-3 top-3 rounded bg-crimson px-2 py-1 text-[11px] font-bold uppercase text-white">
+            <span className="absolute left-2.5 top-2.5 max-w-[calc(100%-4rem)] rounded bg-crimson px-2 py-1 text-[10px] font-bold uppercase leading-tight text-white sm:left-3 sm:top-3 sm:text-[11px]">
               {product.offerLabel || `${off}% OFF`}
             </span>
           )}
@@ -33,7 +33,7 @@ export default function ProductCard({ product }) {
           onClick={() => wishlist.toggle(product)}
           aria-pressed={liked}
           aria-label={liked ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
-          className="absolute right-2.5 top-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow transition hover:scale-110"
+          className="absolute right-2.5 top-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow transition hover:scale-110"
         >
           <svg viewBox="0 0 24 24" className={`h-5 w-5 ${liked ? 'fill-crimson text-crimson' : 'fill-none text-ink'}`} stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.5s-7.5-4.6-9.2-9.3C1.7 8 3.6 5 6.8 5c1.9 0 3.4 1 4.2 2.4h2C13.8 6 15.3 5 17.2 5c3.2 0 5.1 3 4 6.2-1.7 4.7-9.2 9.3-9.2 9.3z" />
@@ -42,7 +42,7 @@ export default function ProductCard({ product }) {
       </div>
       <div className="mt-3 flex flex-1 flex-col">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">{product.category?.name}</p>
-        <Link to={`/product/${product.slug}`} className="mt-1 font-medium leading-snug hover:text-crimson">
+        <Link to={`/product/${product.slug}`} className="mt-1 block py-2 font-medium leading-snug hover:text-crimson">
           {product.name}
         </Link>
         <div className="mt-1.5 flex items-baseline gap-2">

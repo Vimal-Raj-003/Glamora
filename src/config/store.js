@@ -5,7 +5,8 @@ export const STORE = {
   name: 'Glamora',
   legalName: 'Glamora', // your registered business / proprietor name
   supportEmail: 'support@yourdomain.com',
-  supportPhone: '+91 00000 00000',
+  supportPhone: '+91 99432 00746', // shown to customers
+  supportPhoneTel: '+919943200746', // used in tel: links (tap to call)
   address: 'Your registered business address, City, State, PIN code, India',
   website: 'https://www.yourdomain.com',
   lastUpdated: '6 October 2026',

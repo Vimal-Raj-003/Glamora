@@ -69,7 +69,7 @@ function Dashboard() {
               key={r}
               onClick={() => setDays(r)}
               aria-pressed={days === r}
-              className={`rounded px-3 py-1.5 text-xs font-semibold transition ${days === r ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}
+              className={`min-h-10 rounded px-3.5 py-2 text-xs font-semibold transition ${days === r ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}
             >
               {r} days
             </button>
@@ -252,8 +252,8 @@ function Products() {
                 <td className={`p-3 ${p.stock <= 5 ? 'font-semibold text-crimson' : ''}`}>{p.stock}</td>
                 <td className="p-3">{p.isActive ? 'Visible' : 'Hidden'}{p.isFeatured && ' · Featured'}</td>
                 <td className="space-x-3 p-3 text-right text-xs">
-                  <button className="underline hover:text-crimson" onClick={() => setEditing(p)}>Edit</button>
-                  <button className="underline hover:text-crimson" onClick={() => remove(p)}>Delete</button>
+                  <button className="link-btn" onClick={() => setEditing(p)}>Edit</button>
+                  <button className="link-btn" onClick={() => remove(p)}>Delete</button>
                 </td>
               </tr>
             ))}
@@ -298,7 +298,7 @@ function Orders() {
             <div className="flex items-center gap-3">
               <span className="font-semibold">{formatPrice(o.total)}</span>
               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[o.status]}`}>{STATUS_LABELS[o.status]}</span>
-              <select aria-label="Update status" value={o.status} onChange={(e) => change(o.id, e.target.value)} className="input w-40 py-1.5">
+              <select aria-label="Update status" value={o.status} onChange={(e) => change(o.id, e.target.value)} className="input w-44 py-2">
                 {STATUSES.map((s) => (
                   // an unpaid order can only stay pending or be cancelled
                   <option key={s} value={s} disabled={!captured && s !== 'pending' && s !== 'cancelled'}>{STATUS_LABELS[s]}</option>

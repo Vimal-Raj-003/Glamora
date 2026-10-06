@@ -71,6 +71,8 @@ export function AuthProvider({ children }) {
       routerPush={(to) => navigate(to)}
       routerReplace={(to) => navigate(to, { replace: true })}
       afterSignOutUrl="/"
+      signInFallbackRedirectUrl="/shop"
+      signUpFallbackRedirectUrl="/shop"
       appearance={{
         // Email + password is the main way in; Google is an optional extra shown underneath.
         layout: { socialButtonsPlacement: 'bottom', socialButtonsVariant: 'blockButton' },

@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
 import CartDrawer from './CartDrawer'
+import ChatWidget from './ChatWidget'
 
 export default function Layout() {
   const { pathname } = useLocation()
@@ -13,11 +14,12 @@ export default function Layout() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1">
+      <main className="min-w-0 flex-1">
         <Outlet />
       </main>
       <Footer />
       <CartDrawer />
+      <ChatWidget />
     </div>
   )
 }

@@ -14,7 +14,7 @@ function PolicyPage({ title, children }) {
           {children}
         </div>
         <p className="mt-12 border-t border-line pt-6 text-sm text-muted">
-          Questions? Contact us at <a className="text-crimson underline" href={`mailto:${STORE.supportEmail}`}>{STORE.supportEmail}</a> or {STORE.supportPhone}.
+          Questions? Contact us at <a className="text-crimson underline" href={`mailto:${STORE.supportEmail}`}>{STORE.supportEmail}</a> or <a className="text-crimson underline" href={`tel:${STORE.supportPhoneTel}`}>{STORE.supportPhone}</a>.
         </p>
       </div>
     </>
