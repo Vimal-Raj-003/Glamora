@@ -50,12 +50,20 @@ export function createAuthMiddleware(provider, prisma) {
       const ident = await provider.fetchIdentity(clerkId)
       if (!ident) throw new HttpError(400, 'Your account has no email address.')
       const makeAdmin = ident.emailVerified && admins.has(ident.email)
-      const existing = await prisma.user.findUnique({ where: { email: ident.email } })
-      user = existing
-        ? await prisma.user.update({ where: { id: existing.id }, data: { clerkId } })
-        : await prisma.user.create({
-            data: { clerkId, email: ident.email, fullName: ident.name, role: makeAdmin ? 'super_admin' : 'customer' },
-          })
+      try {
+        const existing = await prisma.user.findUnique({ where: { email: ident.email } })
+        user = existing
+          ? await prisma.user.update({ where: { id: existing.id }, data: { clerkId } })
+          : await prisma.user.create({
+              data: { clerkId, email: ident.email, fullName: ident.name, role: makeAdmin ? 'super_admin' : 'customer' },
+            })
+      } catch (err) {
+        // On first login the browser fires several requests at once; the others lose the race to
+        // create the same user (unique constraint). Just read the row the winner created.
+        if (err?.code !== 'P2002') throw err
+        user = await prisma.user.findFirst({ where: { OR: [{ clerkId }, { email: ident.email }] } })
+        if (!user) throw err
+      }
     }
 
     const listed = admins.has(user.email.toLowerCase())
