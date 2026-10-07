@@ -4,6 +4,12 @@ import { getCategories, getProducts } from '../lib/api'
 import ProductGrid from '../components/ProductGrid'
 import { Spinner, ErrorBox } from '../components/ui'
 
+const HERO_TRUST = [
+  { label: 'Free shipping', path: 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm10 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z' },
+  { label: 'Secure payments', path: 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4' },
+  { label: 'Authentic products', path: 'M12 3l2.4 2.2 3.2-.3.9 3.1 2.8 1.7-1.2 3 1.2 3-2.8 1.7-.9 3.1-3.2-.3L12 21l-2.4-2.2-3.2.3-.9-3.1L2.7 14.3l1.2-3-1.2-3 2.8-1.7.9-3.1 3.2.3zM9 12l2 2 4-4' },
+]
+
 const PERKS = [
   { title: 'Free shipping', text: 'On every order, no minimum' },
   { title: 'Authentic products', text: '100% genuine, quality assured' },
@@ -21,21 +27,31 @@ export default function Home() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-ink text-white">
         <div className="absolute -right-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-crimson/30 blur-3xl" aria-hidden="true" />
-        <div className="container-x relative grid items-center gap-10 py-16 md:grid-cols-2 md:py-24">
+        <div className="container-x relative grid items-center gap-6 py-6 sm:py-8 md:grid-cols-2 md:py-8">
           <div>
             <p className="eyebrow">New season · Bold colour</p>
-            <h1 className="mt-4 font-serif text-5xl font-semibold leading-[1.05] sm:text-6xl">
+            <h1 className="mt-3 font-serif text-5xl font-semibold leading-[1.05] sm:text-6xl">
               Beauty that <span className="text-crimson">makes</span> an entrance.
             </h1>
-            <p className="mt-5 max-w-md text-base leading-relaxed text-white/70">
+            <p className="mt-4 max-w-md text-base leading-relaxed text-white/70">
               Discover face, eye and lip essentials crafted for a flawless finish — from everyday glow to full glam.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link to="/shop" className="btn btn-primary">Shop now</Link>
               <Link to="/category/lips" className="btn border border-white/40 text-white hover:bg-white hover:text-ink">Explore lips</Link>
             </div>
+            <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/15 pt-4 text-xs text-white/80 sm:text-sm">
+              {HERO_TRUST.map((t) => (
+                <li key={t.label} className="inline-flex items-center gap-1.5">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-crimson" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d={t.path} />
+                  </svg>
+                  {t.label}
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="relative mx-auto aspect-square w-full max-w-sm">
+          <div className="relative mx-auto aspect-square w-full max-w-[15rem] sm:max-w-xs md:max-w-sm">
             <div className="absolute inset-0 rounded-full border border-crimson/60" />
             <div className="absolute inset-4 rounded-full bg-white" />
             <img src="/images/face/2.avif" alt="Glamora liquid foundation" className="relative h-full w-full rounded-full object-cover mix-blend-multiply" />
