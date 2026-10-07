@@ -117,11 +117,7 @@ export function Shipping() {
       <p>We currently ship to addresses across India. Please make sure your address, PIN code and phone number are correct so our delivery partner can reach you.</p>
 
       <h2>Shipping charges</h2>
-      <ul>
-        <li>Orders of <strong>₹999 or more</strong> ship free.</li>
-        <li>Orders below ₹999 have a flat shipping charge of <strong>₹80</strong>.</li>
-      </ul>
-      <p>The exact shipping charge is shown at checkout before you pay.</p>
+      <p><strong>Shipping is free on every order</strong> — there is no minimum order value and no delivery charge. The price you see at checkout is the price you pay.</p>
 
       <h2>Processing and delivery time</h2>
       <ul>
@@ -134,7 +130,7 @@ export function Shipping() {
       <p>You can follow your order status from <Link to="/account">My account → Orders</Link>. We will share tracking details by email or phone once your order ships.</p>
 
       <h2>Failed or missed deliveries</h2>
-      <p>If delivery fails because of an incorrect address or because you were unreachable, the courier may return the parcel to us. We will contact you to arrange re-delivery, which may involve an additional shipping charge.</p>
+      <p>If delivery fails because of an incorrect address or because you were unreachable, the courier may return the parcel to us. We will contact you to arrange re-delivery, which we will do our best to arrange it at no extra cost to you where the courier allows.</p>
 
       <h2>Damaged or wrong parcels</h2>
       <p>Please check your parcel on arrival. If it looks tampered with or damaged, tell us within 48 hours (see our <Link to="/return-refund-policy">Return &amp; Refund Policy</Link>).</p>
@@ -173,7 +169,6 @@ export function Returns() {
       <ul>
         <li>Once we receive and inspect the returned item, we will approve or reject the refund and let you know by email.</li>
         <li>Approved refunds are issued to your original payment method (via Razorpay) within <strong>5–7 business days</strong>. Your bank may take additional time to show the credit.</li>
-        <li>Shipping charges are refunded only if the return is due to our error (damaged, defective or wrong item).</li>
         <li>At our discretion we may offer a replacement instead of a refund, where stock allows.</li>
       </ul>
 

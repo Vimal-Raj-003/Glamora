@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { formatPrice, FREE_SHIPPING_THRESHOLD, maxQuantity } from '../lib/format'
+import { formatPrice, maxQuantity } from '../lib/format'
 import QuantityStepper from '../components/QuantityStepper'
 import { PageHeader, Empty } from '../components/ui'
 import { ChatHelpButton } from '../components/ChatWidget'
@@ -43,9 +43,6 @@ export default function Cart() {
               <div className="flex justify-between"><dt>Shipping</dt><dd>{shipping === 0 ? 'Free' : formatPrice(shipping)}</dd></div>
               <div className="flex justify-between border-t border-line pt-3 text-base font-bold"><dt>Total</dt><dd>{formatPrice(total)}</dd></div>
             </dl>
-            {shipping > 0 && (
-              <p className="mt-3 text-xs text-muted">Add {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} more for free shipping.</p>
-            )}
             <Link to="/checkout" className="btn btn-primary mt-6 w-full">Proceed to checkout</Link>
             <Link to="/shop" className="btn btn-ghost mt-2 w-full">Continue shopping</Link>
             <div className="mt-1 text-center"><ChatHelpButton /></div>

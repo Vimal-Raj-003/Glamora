@@ -7,7 +7,7 @@ services:
   - type: web
     name: glamora-api
     runtime: node
-    region: singapore # pick the region closest to your Neon database
+    region: ohio # your Neon database is in AWS us-east-2 (Ohio); keep the API in the same region for speed
     # "free" sleeps when idle (the first request after a pause can take ~1 minute).
     # Switch to "starter" before taking real payments so orders and the Razorpay webhook are never delayed.
     plan: free

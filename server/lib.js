@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-export const FREE_SHIPPING_THRESHOLD = 999
-export const SHIPPING_FEE = 80
+// Every order ships free: there is no shipping charge on any product or order value.
+export const SHIPPING_FEE = 0
 export const ORDER_STATUSES = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']
 export const PAID_STATUSES = ['paid', 'processing', 'shipped', 'delivered']
 export const MIN_ORDER_PAISE = 100 // Razorpay's minimum is ₹1
@@ -40,12 +40,8 @@ export const addressSchema = z.object({
 
 export const money = (n) => Math.round(Number(n) * 100) / 100
 
-// Shipping is free above the threshold, and always free when every product in the cart is a free-shipping product.
-// `products` is the list of product rows in the cart.
-export const shippingFor = (subtotal, products = []) => {
-  if (products.length > 0 && products.every((p) => p.freeShipping)) return 0
-  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
-}
+// Shipping is always free. Kept as a function so the order code has one clearly named place to ask.
+export const shippingFor = () => SHIPPING_FEE
 
 export const adminEmails = () =>
   new Set(

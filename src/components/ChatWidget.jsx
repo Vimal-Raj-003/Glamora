@@ -15,7 +15,7 @@ export const openChat = () => window.dispatchEvent(new CustomEvent(OPEN_EVENT))
 // Small inline "Need help?" button used on pages where the floating button is hidden (cart, checkout).
 export function ChatHelpButton({ className = '' }) {
   return (
-    <button type="button" onClick={openChat} className={`inline-flex min-h-11 items-center justify-center gap-2 text-sm font-semibold text-crimson hover:underline ${className}`}>
+    <button type="button" onClick={openChat} className={`inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap text-sm font-semibold text-crimson hover:underline ${className}`}>
       <ChatIcon className="h-4 w-4" /> Need help? Chat with us
     </button>
   )

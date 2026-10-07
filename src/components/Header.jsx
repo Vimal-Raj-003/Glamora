@@ -33,14 +33,14 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 bg-ink text-white">
       <div className="bg-crimson py-1.5 text-center text-xs font-medium tracking-wide">
-        Free shipping on orders above ₹999
+        Free shipping on every order
       </div>
-      <div className="container-x flex h-16 items-center gap-4">
+      <div className="container-x flex h-16 items-center gap-2 sm:gap-4">
         <button className="-ml-2 flex h-11 w-11 items-center justify-center lg:hidden" onClick={() => setMenu(!menu)} aria-label="Toggle menu" aria-expanded={menu}>
           <Icon d={menu ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'} className="h-6 w-6" />
         </button>
 
-        <Link to="/" className="inline-block py-2 font-serif text-2xl font-bold tracking-[0.18em]">
+        <Link to="/" className="inline-block py-2 font-serif text-xl font-bold tracking-[0.14em] sm:text-2xl sm:tracking-[0.18em]">
           GLAM<span className="text-crimson">ORA</span>
         </Link>
 
@@ -84,7 +84,7 @@ export default function Header() {
               </div>
             ) : (
               <>
-                <Link to="/login" className="rounded-full px-3 py-2 text-sm font-medium hover:bg-white/10">Log in</Link>
+                <Link to="/login" className="whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium hover:bg-white/10 sm:px-3">Log in</Link>
                 <Link to="/signup" className="hidden rounded-full bg-crimson px-3.5 py-2 text-sm font-semibold hover:bg-crimson-dark sm:inline-block">Sign up</Link>
               </>
             ))}

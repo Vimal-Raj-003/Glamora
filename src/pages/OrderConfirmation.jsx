@@ -78,9 +78,9 @@ export default function OrderConfirmation() {
         )}
       </div>
 
-      <div className="mt-8 flex justify-center gap-3">
-        <Link to="/account" className="btn btn-outline">View my orders</Link>
-        <Link to="/shop" className="btn btn-primary">Continue shopping</Link>
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <Link to="/account" className="btn btn-outline min-h-12 whitespace-nowrap">View my orders</Link>
+        <Link to="/shop" className="btn btn-primary min-h-12 whitespace-nowrap">Continue shopping</Link>
       </div>
     </div>
   )

@@ -72,7 +72,9 @@ export const deleteAddress = (id) => request(`/addresses/${id}`, { method: 'DELE
 // ---------- Orders & payments ----------
 export const getMyOrders = () => request('/orders')
 export const getOrder = (id) => request(`/orders/${id}`)
-export const createOrder = (items, address) => request('/orders', { method: 'POST', body: { items, address } })
+// Only WHAT and HOW MANY are sent. Prices, shipping and the amount to pay are always worked out by the server from the database.
+export const createOrder = (items, address) =>
+  request('/orders', { method: 'POST', body: { items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })), address } })
 // Re-opens payment for an order that is still unpaid (popup closed, payment failed, ...)
 export const getPayInit = (orderId) => request(`/orders/${orderId}/pay`, { method: 'POST' })
 export const verifyPayment = (payload) => request('/orders/verify', { method: 'POST', body: payload })

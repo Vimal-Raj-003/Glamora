@@ -2,7 +2,7 @@
 // data (live products, the customer's own orders) and the same rules written in the policy pages.
 import { getProducts, getMyOrders } from './api'
 import { STORE, CATEGORY_LINKS } from '../config/store'
-import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE, formatPrice } from './format'
+import { formatPrice } from './format'
 import { STATUS_LABELS } from './status'
 
 export const TOPICS = [
@@ -146,7 +146,7 @@ export async function answer(intent, text, ctx) {
     case 'delivery':
       return {
         text:
-          `• Shipping is free on orders of ${formatPrice(FREE_SHIPPING_THRESHOLD)} or more; below that it’s a flat ${formatPrice(SHIPPING_FEE)}.\n` +
+          '• Shipping is free on every order — no minimum order value and no delivery charge.\n' +
           '• Orders are packed within 1–2 business days of payment.\n' +
           '• Delivery usually takes 3–7 business days after dispatch, depending on your location.\n' +
           '• Track your order any time from My Orders.',

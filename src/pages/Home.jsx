@@ -5,7 +5,7 @@ import ProductGrid from '../components/ProductGrid'
 import { Spinner, ErrorBox } from '../components/ui'
 
 const PERKS = [
-  { title: 'Free shipping', text: 'On all orders above ₹999' },
+  { title: 'Free shipping', text: 'On every order, no minimum' },
   { title: 'Authentic products', text: '100% genuine, quality assured' },
   { title: 'Secure payments', text: 'Powered by Razorpay' },
   { title: 'Easy support', text: 'We’re here when you need us' },
@@ -85,8 +85,8 @@ export default function Home() {
         <div className="grid items-center gap-6 overflow-hidden rounded-xl bg-ink text-white md:grid-cols-2">
           <div className="p-8 sm:p-12">
             <p className="eyebrow">Free shipping</p>
-            <h2 className="mt-2 font-serif text-3xl font-semibold sm:text-4xl">Complete your kit & ship free</h2>
-            <p className="mt-3 text-sm text-white/70">Spend ₹999 or more and we’ll deliver your order to your door at no extra cost.</p>
+            <h2 className="mt-2 font-serif text-3xl font-semibold sm:text-4xl">Complete your kit, ships free</h2>
+            <p className="mt-3 text-sm text-white/70">Every order ships free across India, whatever the amount — no minimum, no delivery charge.</p>
             <Link to="/category/makeup-tools" className="btn btn-primary mt-6">Shop tools</Link>
           </div>
           <img src="/images/tools/1.avif" alt="" loading="lazy" className="h-64 w-full bg-white object-contain p-4 md:h-full" />

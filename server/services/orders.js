@@ -35,7 +35,8 @@ export async function finalizePaidOrder(prisma, { orderId, razorpayOrderId, razo
         if (!item.productId) continue
         await tx.$executeRaw`UPDATE "Product" SET "stock" = GREATEST("stock" - ${item.quantity}, 0) WHERE "id" = ${item.productId}`
       }
-      await tx.cartItem.deleteMany({ where: { userId: order.userId } })
+      // Only the products that were bought leave the cart (a "Buy now" must not empty the rest of it).
+      await tx.cartItem.deleteMany({ where: { userId: order.userId, productId: { in: order.items.map((i) => i.productId).filter(Boolean) } } })
       return { result: 'paid' }
     })
   } catch (err) {

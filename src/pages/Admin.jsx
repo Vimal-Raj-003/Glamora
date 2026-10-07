@@ -16,7 +16,7 @@ const STATUSES = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'canc
 const BLANK = {
   name: '', slug: '', description: '', price: '', compareAtPrice: '', stock: 0, categoryId: '',
   imageUrl: '', isFeatured: false, isActive: true, popularity: 0,
-  freeShipping: false, maxPerOrder: '', offerLabel: '',
+  maxPerOrder: '', offerLabel: '',
 }
 
 const RANGES = [7, 30, 90]
@@ -157,7 +157,6 @@ function ProductForm({ product, categories, onDone, onCancel }) {
         isFeatured: form.isFeatured,
         isActive: form.isActive,
         popularity: parseInt(form.popularity, 10) || 0,
-        freeShipping: form.freeShipping,
         maxPerOrder: form.maxPerOrder === '' ? null : Math.max(1, parseInt(form.maxPerOrder, 10) || 1),
         offerLabel: String(form.offerLabel || '').trim() || null,
       })
@@ -194,10 +193,6 @@ function ProductForm({ product, categories, onDone, onCancel }) {
       <Field label="Offer badge text (optional)"><input className="input" placeholder="e.g. Launch offer" maxLength={60} {...bind('offerLabel')} /></Field>
       <Field label="Max quantity per order (optional)"><input type="number" min="1" className="input" {...bind('maxPerOrder')} /></Field>
       <Field label="Popularity score"><input type="number" className="input" {...bind('popularity')} /></Field>
-      <label className="flex items-center gap-2 self-end pb-2.5 text-sm">
-        <input type="checkbox" className="h-4 w-4 accent-crimson" checked={form.freeShipping} onChange={(e) => setForm((f) => ({ ...f, freeShipping: e.target.checked }))} />
-        Always ships free
-      </label>
       <div className="flex items-end gap-6 pb-2.5 text-sm">
         <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-crimson" checked={form.isFeatured} onChange={(e) => setForm((f) => ({ ...f, isFeatured: e.target.checked }))} />Featured</label>
         <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-crimson" checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} />Visible</label>
@@ -238,20 +233,20 @@ function Products() {
   return (
     <div>
       <button className="btn btn-primary btn-sm" onClick={() => setEditing({})}>+ New product</button>
-      <div className="mt-6 overflow-x-auto rounded-lg border border-line">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-mist text-xs uppercase tracking-wider text-muted">
+      <div className="mt-6 overflow-hidden rounded-lg border border-line">
+        <table className="w-full text-left text-sm">
+          <thead className="hidden bg-mist text-xs uppercase tracking-wider text-muted md:table-header-group">
             <tr><th className="p-3">Product</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Stock</th><th className="p-3">Status</th><th className="p-3" /></tr>
           </thead>
-          <tbody className="divide-y divide-line">
+          <tbody className="block divide-y divide-line md:table-row-group">
             {data.map((p) => (
-              <tr key={p.id}>
-                <td className="flex items-center gap-3 p-3"><img src={p.imageUrl} alt="" className="h-10 w-10 rounded bg-mist object-contain" />{p.name}</td>
-                <td className="p-3">{p.category?.name}</td>
-                <td className="p-3">{formatPrice(p.price)}</td>
-                <td className={`p-3 ${p.stock <= 5 ? 'font-semibold text-crimson' : ''}`}>{p.stock}</td>
-                <td className="p-3">{p.isActive ? 'Visible' : 'Hidden'}{p.isFeatured && ' · Featured'}</td>
-                <td className="space-x-3 p-3 text-right text-xs">
+              <tr key={p.id} className="block space-y-2 p-4 md:table-row md:space-y-0 md:p-0">
+                <td className="block md:table-cell md:p-3"><span className="flex items-center gap-3 font-medium md:font-normal"><img src={p.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded bg-mist object-contain md:h-10 md:w-10" />{p.name}</span></td>
+                <td data-label="Category" className="flex items-center justify-between gap-3 before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-muted before:content-[attr(data-label)] md:table-cell md:p-3 md:before:content-none">{p.category?.name}</td>
+                <td data-label="Price" className="flex items-center justify-between gap-3 before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-muted before:content-[attr(data-label)] md:table-cell md:p-3 md:before:content-none">{formatPrice(p.price)}</td>
+                <td data-label="Stock" className={`flex items-center justify-between gap-3 before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-muted before:content-[attr(data-label)] md:table-cell md:p-3 md:before:content-none ${p.stock <= 5 ? 'font-semibold text-crimson' : ''}`}>{p.stock}</td>
+                <td data-label="Status" className="flex items-center justify-between gap-3 before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-muted before:content-[attr(data-label)] md:table-cell md:p-3 md:before:content-none">{p.isActive ? 'Visible' : 'Hidden'}{p.isFeatured && ' · Featured'}</td>
+                <td className="flex gap-2 pt-1 md:table-cell md:space-x-3 md:p-3 md:pt-3 md:text-right">
                   <button className="link-btn" onClick={() => setEditing(p)}>Edit</button>
                   <button className="link-btn" onClick={() => remove(p)}>Delete</button>
                 </td>
@@ -344,22 +339,22 @@ function Customers() {
   if (!data.length) return <p className="text-sm text-muted">No customers yet.</p>
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-line">
-      <table className="w-full min-w-[640px] text-left text-sm">
-        <thead className="bg-mist text-xs uppercase tracking-wider text-muted">
+    <div className="overflow-hidden rounded-lg border border-line">
+      <table className="w-full text-left text-sm">
+        <thead className="hidden bg-mist text-xs uppercase tracking-wider text-muted md:table-header-group">
           <tr><th className="p-3">Customer</th><th className="p-3">Phone</th><th className="p-3">Joined</th><th className="p-3">Orders</th><th className="p-3">Total spent</th></tr>
         </thead>
-        <tbody className="divide-y divide-line">
+        <tbody className="block divide-y divide-line md:table-row-group">
           {data.map((c) => (
-            <tr key={c.id}>
-              <td className="p-3">
-                <p className="font-medium">{c.fullName || '—'} {c.role === 'super_admin' && <span className="ml-1 rounded bg-crimson-soft px-1.5 py-0.5 text-[10px] font-bold text-crimson">SUPER ADMIN</span>}</p>
-                <p className="text-xs text-muted">{c.email}</p>
+            <tr key={c.id} className="block space-y-2 p-4 md:table-row md:space-y-0 md:p-0">
+              <td className="block min-w-0 md:table-cell md:p-3">
+                <p className="break-words font-medium">{c.fullName || '—'} {c.role === 'super_admin' && <span className="ml-1 rounded bg-crimson-soft px-1.5 py-0.5 text-[10px] font-bold text-crimson">SUPER ADMIN</span>}</p>
+                <p className="break-all text-xs text-muted">{c.email}</p>
               </td>
-              <td className="p-3">{c.phone || '—'}</td>
-              <td className="p-3">{formatDate(c.createdAt)}</td>
-              <td className="p-3">{c.orderCount}</td>
-              <td className="p-3 font-semibold">{formatPrice(c.totalSpent)}</td>
+              <td data-label="Phone" className="flex items-center justify-between gap-3 before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-muted before:content-[attr(data-label)] md:table-cell md:p-3 md:before:content-none">{c.phone || '—'}</td>
+              <td data-label="Joined" className="flex items-center justify-between gap-3 before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-muted before:content-[attr(data-label)] md:table-cell md:p-3 md:before:content-none">{formatDate(c.createdAt)}</td>
+              <td data-label="Orders" className="flex items-center justify-between gap-3 before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-muted before:content-[attr(data-label)] md:table-cell md:p-3 md:before:content-none">{c.orderCount}</td>
+              <td data-label="Total spent" className="flex items-center justify-between gap-3 before:text-[11px] before:font-semibold before:uppercase before:tracking-wider before:text-muted before:content-[attr(data-label)] md:table-cell md:p-3 md:before:content-none font-semibold">{formatPrice(c.totalSpent)}</td>
             </tr>
           ))}
         </tbody>

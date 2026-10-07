@@ -49,7 +49,7 @@ model Product {
   isFeatured     Boolean  @default(false)
   isActive       Boolean  @default(true)
   popularity     Int      @default(0)
-  freeShipping   Boolean  @default(false) // never charge shipping when the cart holds only free-shipping products
+  freeShipping   Boolean  @default(false) // no longer used: every order ships free (column kept so no migration is needed)
   maxPerOrder    Int? // optional per-order quantity limit (enforced on the server)
   offerLabel     String? // optional badge text such as "₹1 Live Test Offer"
   createdAt      DateTime @default(now())

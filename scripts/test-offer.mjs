@@ -27,7 +27,7 @@ try {
         where: { id: p.id },
         data: { price: 1, compareAtPrice: original, freeShipping: true, maxPerOrder: 1, offerLabel: LABEL },
       })
-      console.log(`Offer ON: "${p.name}" is now ₹1 (was ₹${original}), free shipping, max 1 per order.`)
+      console.log(`Offer ON: "${p.name}" is now ₹1 (was ₹${original}), max 1 per order.`)
     }
   } else if (p.offerLabel !== LABEL) {
     console.log('Offer is not active - nothing to do.')

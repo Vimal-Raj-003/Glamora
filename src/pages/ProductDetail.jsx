@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAsync } from '../hooks/useAsync'
 import { getProduct, getProducts } from '../lib/api'
 import { useCart } from '../context/CartContext'
@@ -11,9 +11,11 @@ import { Spinner, ErrorBox, Empty } from '../components/ui'
 
 export default function ProductDetail() {
   const { slug } = useParams()
+  const navigate = useNavigate()
   const { add } = useCart()
   const wishlist = useWishlist()
   const [qty, setQty] = useState(1)
+  useEffect(() => setQty(1), [slug]) // a different product starts at quantity 1
   const { data: product, loading, error } = useAsync(() => getProduct(slug), [slug])
   const related = useAsync(
     () => (product ? getProducts({ categorySlug: product.category?.slug, limit: 5 }) : Promise.resolve([])),
@@ -27,11 +29,12 @@ export default function ProductDetail() {
   const off = discountPercent(product.price, product.compareAtPrice)
   const soldOut = product.stock <= 0
   const lowStock = product.stock > 0 && product.stock <= 10
+  const buyNow = () => navigate(`/checkout?buy=${encodeURIComponent(product.id)}&qty=${qty}`)
   const others = (related.data || []).filter((p) => p.id !== product.id).slice(0, 4)
 
   return (
-    <div className="container-x py-8">
-      <nav className="mb-6 text-sm text-muted" aria-label="Breadcrumb">
+    <div className="container-x py-3 sm:py-4 lg:py-5">
+      <nav className="mb-2 text-xs text-muted sm:text-sm" aria-label="Breadcrumb">
         <Link to="/" className="hover:text-crimson">Home</Link> /{' '}
         {product.category && (
           <>
@@ -41,56 +44,69 @@ export default function ProductDetail() {
         <span className="text-ink">{product.name}</span>
       </nav>
 
-      <div className="grid gap-10 md:grid-cols-2">
-        <div className="flex aspect-square items-center justify-center rounded-xl bg-mist p-8">
-          <img src={product.imageUrl} alt={product.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+      {/* Image and details sit side by side from tablet up. The image height is limited by the screen height,
+          so the price and the buy buttons are in the first view on laptops and desktops. */}
+      <div className="grid items-start gap-3 sm:gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-6 lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-10">
+        <div className="flex h-40 w-full items-center justify-center rounded-xl bg-mist p-3 sm:h-48 md:h-64 lg:h-[clamp(18rem,calc(100dvh-20rem),24rem)] lg:p-5">
+          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-contain mix-blend-multiply" />
         </div>
 
-        <div>
+        <div className="flex min-w-0 flex-col">
           <p className="text-xs font-semibold uppercase tracking-widest text-crimson">{product.category?.name}</p>
-          <h1 className="mt-2 font-serif text-3xl font-semibold sm:text-4xl">{product.name}</h1>
-          <div className="mt-4 flex items-baseline gap-3">
+          <h1 className="mt-1 font-serif text-2xl font-semibold leading-tight sm:text-3xl">{product.name}</h1>
+
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="text-2xl font-bold">{formatPrice(product.price)}</span>
             {off > 0 && (
               <>
-                <span className="text-lg text-muted line-through">{formatPrice(product.compareAtPrice)}</span>
+                <span className="text-base text-muted line-through sm:text-lg">{formatPrice(product.compareAtPrice)}</span>
                 <span className="rounded bg-crimson-soft px-2 py-0.5 text-xs font-bold uppercase text-crimson">{product.offerLabel || `${off}% OFF`}</span>
               </>
             )}
           </div>
-          <p className="mt-1 text-xs text-muted">
-            Inclusive of all taxes
-            {product.freeShipping && ' · Ships free'}
-            {product.maxPerOrder ? ` · Limit ${product.maxPerOrder} per order` : ''}
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
+            <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${soldOut ? 'text-crimson' : lowStock ? 'text-amber-600' : 'text-emerald-600'}`}>
+              <span className="h-2 w-2 rounded-full bg-current" aria-hidden="true" />
+              {soldOut ? 'Out of stock' : lowStock ? `Only ${product.stock} left` : 'In stock'}
+            </span>
+            <span>
+              Inclusive of all taxes
+              {' · Free shipping'}
+              {product.maxPerOrder ? ` · Limit ${product.maxPerOrder} per order` : ''}
+            </span>
           </p>
 
-          <p className="mt-6 leading-relaxed text-graphite">{product.description}</p>
-
-          <p className={`mt-6 text-sm font-medium ${soldOut ? 'text-crimson' : lowStock ? 'text-amber-600' : 'text-emerald-600'}`}>
-            {soldOut ? 'Out of stock' : lowStock ? `Only ${product.stock} left` : 'In stock'}
-          </p>
-
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            <QuantityStepper value={qty} max={maxQuantity(product)} onChange={(v) => setQty(Math.max(1, v))} />
-            <button onClick={() => add(product, qty)} disabled={soldOut} className="btn btn-primary flex-1 sm:flex-none sm:px-12">
+          {/* Quantity + actions. Phone: [quantity | wishlist] then [Add to cart | Buy now]. Laptop+: one row. */}
+          <div className="order-2 mt-3 grid grid-cols-2 gap-3 md:order-1 md:mt-4 lg:flex lg:flex-wrap lg:items-center">
+            <div className="order-1 flex items-center gap-2">
+              <span className="label !mb-0 hidden sm:inline lg:hidden">Qty</span>
+              <QuantityStepper value={qty} max={maxQuantity(product)} onChange={(v) => setQty(Math.max(1, v))} />
+            </div>
+            <button onClick={() => add(product, qty)} disabled={soldOut} className="btn btn-dark order-3 min-h-12 lg:order-2 lg:min-w-[9.5rem]">
               Add to cart
             </button>
-            <button onClick={() => wishlist.toggle(product)} aria-pressed={wishlist.has(product.id)} className="btn btn-outline">
+            {/* Buy Now goes straight to checkout with ONLY this product and quantity; the cart is not touched. */}
+            <button onClick={buyNow} disabled={soldOut} className="btn btn-primary order-4 min-h-12 lg:order-3 lg:min-w-[9.5rem]">
+              Buy now
+            </button>
+            <button onClick={() => wishlist.toggle(product)} aria-pressed={wishlist.has(product.id)} className="btn btn-outline order-2 min-h-12 justify-self-end px-4 lg:order-4">
               {wishlist.has(product.id) ? '♥ Saved' : '♡ Wishlist'}
             </button>
           </div>
 
-          <ul className="mt-8 space-y-2 border-t border-line pt-6 text-sm text-muted">
-            <li>✓ Free shipping on orders above ₹999</li>
-            <li>✓ 100% authentic products</li>
-            <li>✓ Secure checkout with Razorpay</li>
+          <p className="order-3 mt-3 text-[15px] leading-relaxed text-graphite md:order-none">{product.description}</p>
+
+          <ul className="order-4 mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-3 text-xs text-muted">
+            <li>✓ Free shipping on every order</li>
+            <li>✓ 100% authentic</li>
+            <li>✓ Secure Razorpay checkout</li>
           </ul>
         </div>
       </div>
 
       {others.length > 0 && (
-        <section className="mt-20">
-          <h2 className="section-title mb-8">You may also like</h2>
+        <section className="mt-10">
+          <h2 className="section-title mb-6">You may also like</h2>
           <ProductGrid products={others} />
         </section>
       )}
