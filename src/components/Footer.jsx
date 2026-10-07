@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { CATEGORY_LINKS, STORE } from '../config/store'
-import { openChat } from './ChatWidget'
 
 const POLICIES = [
   { to: '/privacy-policy', label: 'Privacy Policy' },
@@ -20,10 +19,13 @@ export default function Footer() {
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/60 md:mt-4">
             Premium makeup for every face. Bold colour, flawless finish and formulas you can trust.
           </p>
-          <p className="mt-4 hidden text-sm text-white/60 md:block">
-            <a href={`mailto:${STORE.supportEmail}`} className="hover:text-crimson">{STORE.supportEmail}</a><br />
-            <a href={`tel:${STORE.supportPhoneTel}`} className="inline-block py-2 hover:text-crimson">{STORE.supportPhone}</a>
-          </p>
+          <div className="mt-4 hidden md:block">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Customer Care</h4>
+            <ul className="mt-1 text-sm">
+              <li><a href={`tel:${STORE.supportPhoneTel}`} className="inline-block py-2 text-white/80 hover:text-crimson">Call Support</a></li>
+              <li><a href={`mailto:${STORE.supportEmail}`} className="inline-block py-2 text-white/80 hover:text-crimson">Email Support</a></li>
+            </ul>
+          </div>
         </div>
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Shop</h4>
@@ -47,9 +49,8 @@ export default function Footer() {
         <div className="md:hidden">
           <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Customer Care</h4>
           <ul className="mt-1 space-y-0 text-sm">
-            <li><a href={`tel:${STORE.supportPhoneTel}`} className="block whitespace-nowrap py-2 text-white/80 hover:text-crimson">{STORE.supportPhone}</a></li>
-            <li><a href={`mailto:${STORE.supportEmail}`} className="block break-all py-2 text-white/80 hover:text-crimson">{STORE.supportEmail}</a></li>
-            <li><button type="button" onClick={openChat} className="block py-2 text-left text-white/80 hover:text-crimson">Chat with us</button></li>
+            <li><a href={`tel:${STORE.supportPhoneTel}`} className="block py-2 text-white/80 hover:text-crimson">Call Support</a></li>
+            <li><a href={`mailto:${STORE.supportEmail}`} className="block py-2 text-white/80 hover:text-crimson">Email Support</a></li>
           </ul>
         </div>
         <div>
