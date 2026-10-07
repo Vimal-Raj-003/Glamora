@@ -1,9 +1,8 @@
 // Thin client for the Glamora API (Express + Prisma + Neon). This is the ONLY place the frontend talks to the backend.
 //
-// VITE_API_URL is the address of the deployed backend, e.g. https://glamora-api.onrender.com
-//  - Production (website on Vercel, API on Render/Railway): set VITE_API_URL in Vercel, then redeploy.
-//  - Local development: leave it empty. Vite proxies /api to http://localhost:4000.
-//  - Express serving the website itself (same address): leave it empty.
+// Production: the API runs on Vercel next to the website (api/[...path].js), so leave VITE_API_URL empty and calls go to /api.
+// Local development: Vite proxies /api to http://localhost:4000.
+// VITE_API_URL is only needed if the API is ever hosted on a different address.
 const API_BASE = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '').replace(/\/api$/, '')
 
 let tokenGetter = null
@@ -14,7 +13,7 @@ export const setTokenGetter = (fn) => {
 const notReached = (status) => {
   const hint = API_BASE
     ? `The store server at ${API_BASE} did not answer correctly.`
-    : 'The store server (/api) was not found. If this is a deployed site, set VITE_API_URL to your backend address and redeploy.'
+    : 'The store server (/api) was not found. Please try again shortly.'
   console.error(`[Glamora] API problem (HTTP ${status}). ${hint}`)
   return API_BASE ? 'The store is temporarily unavailable. Please try again in a moment.' : `${hint} (HTTP ${status})`
 }
