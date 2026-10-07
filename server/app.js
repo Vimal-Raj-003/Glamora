@@ -35,12 +35,12 @@ export function createApp({ prisma, authProvider }) {
   app.get('/api/health', (req, res) => res.json({ ok: true }))
   // Database check for deployment troubleshooting. Reports only yes/no flags and an error code, never a value or message.
   app.get('/api/health/db', async (req, res) => {
-    const shape = (v) => (v ? { length: v.length, hasScheme: v.includes('://'), startsWith: /^postgres(ql)?:\/\//i.test(v), hasAtSign: v.includes('@'), hasSpace: /\s/.test(v) } : false)
+    const shape = (v) => (v ? { length: v.length, hasScheme: v.includes('://'), startsWith: /^postgres(ql)?:\/\//i.test(v), hasAtSign: v.includes('@'), hasSpace: /\s/.test(v), pooler: /-pooler\./i.test(v) } : false)
     const env = { DATABASE_URL: shape(process.env.DATABASE_URL), DIRECT_URL: shape(process.env.DIRECT_URL) }
     try {
       await prisma.$queryRaw`SELECT 1`
       const [categories, products] = await Promise.all([prisma.category.count(), prisma.product.count()])
-      res.json({ ok: true, env, categories, products })
+      res.json({ ok: true, env, databaseUrlSource: process.env.DATABASE_URL_SOURCE, categories, products })
     } catch (e) {
       console.error('[health/db]', e)
       res.status(503).json({ ok: false, env, error: e?.name || 'Error', code: e?.code || e?.errorCode || null, detail: String(e?.message || '').replace(/[a-z]+:\/\/\S+/gi, '<url>').replace(/\s+/g, ' ').slice(-450) })

@@ -12,6 +12,7 @@ const directUrl = cleanUrl(process.env.DIRECT_URL)
 if (directUrl) process.env.DIRECT_URL = directUrl
 // If DATABASE_URL is missing a valid address, fall back to the direct Neon URL so the site still works.
 const url = cleanUrl(process.env.DATABASE_URL) || directUrl
+process.env.DATABASE_URL_SOURCE = cleanUrl(process.env.DATABASE_URL) ? 'DATABASE_URL' : 'DIRECT_URL (fallback)'
 if (url) process.env.DATABASE_URL = url
 
 export const prisma = new PrismaClient()
