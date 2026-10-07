@@ -189,7 +189,7 @@ export default function Account() {
           ))}
           <div className="ml-auto flex gap-2 pb-2">
             <Link to="/wishlist" className="btn btn-outline btn-sm">Wishlist</Link>
-            {isAdmin && <Link to="/admin" className="btn btn-dark btn-sm">Super Admin</Link>}
+            {isAdmin && <Link to="/admin" className="btn btn-dark btn-sm">Super Admin Dashboard</Link>}
             <button onClick={signOut} className="btn btn-outline btn-sm">Log out</button>
           </div>
         </div>

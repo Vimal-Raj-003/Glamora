@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAsync } from '../hooks/useAsync'
 import { useToast } from '../context/ToastContext'
 import {
@@ -149,7 +150,7 @@ function Dashboard() {
 function ProductForm({ product, categories, onDone, onCancel }) {
   const toast = useToast()
   const [form, setForm] = useState(
-    product.id ? { ...product, compareAtPrice: product.compareAtPrice ?? '', maxPerOrder: product.maxPerOrder ?? '', offerLabel: product.offerLabel ?? '' } : { ...BLANK, categoryId: categories[0]?.id || '' },
+    product.id ? { ...product, discount: product.compareAtPrice > product.price ? String(Math.round((1 - product.price / product.compareAtPrice) * 1000) / 10) : '', compareAtPrice: product.compareAtPrice ?? '', maxPerOrder: product.maxPerOrder ?? '', offerLabel: product.offerLabel ?? '' } : { ...BLANK, categoryId: categories[0]?.id || '' },
   )
   const [busy, setBusy] = useState(false)
   const [errors, setErrors] = useState({})
@@ -179,6 +180,21 @@ function ProductForm({ product, categories, onDone, onCancel }) {
     img.src = url
   }
 
+  // Original price, selling price and discount % stay in step with each other.
+  const setPricing = (field, raw) =>
+    setForm((f) => {
+      const n = { ...f, [field]: raw }
+      const orig = Number(n.compareAtPrice)
+      if (field === 'discount' && orig > 0 && raw !== '') {
+        n.price = String(Math.round(orig * (1 - Math.min(Number(raw), 99) / 100) * 100) / 100)
+      } else if (field !== 'discount' && orig > 0 && n.price !== '' && Number(n.price) <= orig) {
+        n.discount = String(Math.round((1 - Number(n.price) / orig) * 1000) / 10)
+      } else if (!(orig > 0)) {
+        n.discount = ''
+      }
+      return n
+    })
+
   const bind = (n) => ({ value: form[n] ?? '', onChange: (e) => setForm((f) => ({ ...f, [n]: e.target.value })) })
 
   const submit = async (e) => {
@@ -186,6 +202,7 @@ function ProductForm({ product, categories, onDone, onCancel }) {
     const errs = {}
     if (!form.name.trim()) errs.name = 'Required'
     if (form.price === '' || Number(form.price) < 0) errs.price = 'Enter a valid price'
+    if (form.compareAtPrice !== '' && form.compareAtPrice != null && Number(form.compareAtPrice) < Number(form.price)) errs.compareAtPrice = 'Original price must be at least the selling price'
     if (!form.imageUrl) errs.imageUrl = 'Add an image'
     if (!form.categoryId) errs.categoryId = 'Choose a category'
     setErrors(errs)
@@ -226,9 +243,11 @@ function ProductForm({ product, categories, onDone, onCancel }) {
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </Field>
-      <Field label="Stock"><input type="number" min="0" className="input" {...bind('stock')} /></Field>
-      <Field label="Price (₹)" error={errors.price}><input type="number" min="0" step="0.01" className="input" {...bind('price')} /></Field>
-      <Field label="Compare-at price (₹)"><input type="number" min="0" step="0.01" className="input" {...bind('compareAtPrice')} /></Field>
+      <Field label="Stock quantity"><input type="number" min="0" className="input" {...bind('stock')} /></Field>
+      <Field label="Original price / MRP (₹)" error={errors.compareAtPrice}><input type="number" min="0" step="0.01" className="input" value={form.compareAtPrice ?? ''} onChange={(e) => setPricing('compareAtPrice', e.target.value)} /></Field>
+      <Field label="Selling price (₹)" error={errors.price}><input type="number" min="0" step="0.01" className="input" value={form.price ?? ''} onChange={(e) => setPricing('price', e.target.value)} /></Field>
+      <Field label="Discount (%)"><input type="number" min="0" max="99" step="0.1" className="input" placeholder="Needs an original price" disabled={!form.compareAtPrice} value={form.discount ?? ''} onChange={(e) => setPricing('discount', e.target.value)} /></Field>
+      <p className="-mt-1 self-end pb-3 text-xs text-muted">Enter the original price and a discount % to fill the selling price automatically, or type the selling price and the discount is worked out for you. Leave the original price empty for no discount.</p>
       <div className="sm:col-span-2"><Field label="Description"><textarea rows={4} className="input" {...bind('description')} /></Field></div>
       <div className="sm:col-span-2">
         <Field label="Image path or URL" error={errors.imageUrl}>
@@ -246,9 +265,14 @@ function ProductForm({ product, categories, onDone, onCancel }) {
       <Field label="Offer badge text (optional)"><input className="input" placeholder="e.g. Launch offer" maxLength={60} {...bind('offerLabel')} /></Field>
       <Field label="Max quantity per order (optional)"><input type="number" min="1" className="input" {...bind('maxPerOrder')} /></Field>
       <Field label="Popularity score"><input type="number" className="input" {...bind('popularity')} /></Field>
+      <Field label="Status">
+        <select className="input" value={form.isActive ? 'active' : 'inactive'} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.value === 'active' }))}>
+          <option value="active">Active (visible to customers)</option>
+          <option value="inactive">Inactive (hidden)</option>
+        </select>
+      </Field>
       <div className="flex items-end gap-6 pb-2.5 text-sm">
         <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-crimson" checked={form.isFeatured} onChange={(e) => setForm((f) => ({ ...f, isFeatured: e.target.checked }))} />Featured</label>
-        <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-crimson" checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} />Visible</label>
       </div>
       <div className="flex gap-3 sm:col-span-2">
         <button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save product'}</button>
@@ -285,7 +309,7 @@ function Products() {
 
   return (
     <div>
-      <button className="btn btn-primary btn-sm" onClick={() => setEditing({})}>+ New product</button>
+      <button className="btn btn-primary btn-sm" onClick={() => setEditing({})}>+ Add Product</button>
       <div className="mt-6 overflow-hidden rounded-lg border border-line">
         <table className="w-full text-left text-sm">
           <thead className="hidden bg-mist text-xs uppercase tracking-wider text-muted md:table-header-group">
@@ -662,14 +686,17 @@ function System() {
 }
 
 export default function Admin() {
-  const [tab, setTab] = useState('Dashboard')
+  // The tab lives in the address (/admin?tab=products) so a refresh or a shared link keeps the same tab.
+  const [params, setParams] = useSearchParams()
+  const tab = TABS.find((t) => t.toLowerCase() === params.get('tab')) || 'Dashboard'
+  const setTab = (t) => setParams(t === 'Dashboard' ? {} : { tab: t.toLowerCase() }, { replace: true })
   return (
     <>
       <PageHeader eyebrow="Super Admin" title="Store management" />
       <div className="container-x py-10">
-        <div className="mb-8 flex flex-wrap gap-2 border-b border-line">
+        <div className="mb-8 flex flex-wrap gap-2 border-b border-line" role="tablist" aria-label="Super Admin sections">
           {TABS.map((t) => (
-            <button key={t} onClick={() => setTab(t)} className={`-mb-px border-b-2 px-4 py-3 text-sm font-semibold ${tab === t ? 'border-crimson text-crimson' : 'border-transparent text-muted hover:text-ink'}`}>
+            <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`-mb-px border-b-2 px-3.5 py-3 text-sm font-semibold sm:px-4 ${tab === t ? 'border-crimson text-crimson' : 'border-transparent text-muted hover:text-ink'}`}>
               {t}
             </button>
           ))}
