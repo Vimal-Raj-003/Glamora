@@ -117,7 +117,7 @@ export function Shipping() {
       <p>We currently ship to addresses across India. Please make sure your address, PIN code and phone number are correct so our delivery partner can reach you.</p>
 
       <h2>Shipping charges</h2>
-      <p><strong>Shipping is free on every order</strong> — there is no minimum order value and no delivery charge. The price you see at checkout is the price you pay.</p>
+      <p><strong>Orders below ₹1,000 ship free.</strong> Orders of ₹1,000 or more have a flat shipping charge of ₹80. The shipping amount is shown in your cart and at checkout before you pay, and the total you see is the total you pay.</p>
 
       <h2>Processing and delivery time</h2>
       <ul>

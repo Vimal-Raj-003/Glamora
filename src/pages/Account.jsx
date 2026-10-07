@@ -33,7 +33,7 @@ function Orders({ userId }) {
           </div>
           <p className="mt-3 text-sm text-muted">{o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</p>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-            <p className="font-semibold">{formatPrice(o.total)}</p>
+            <p className="font-semibold">{formatPrice(o.total)} <span className="text-xs font-normal text-muted">· {Number(o.shippingFee) > 0 ? `incl. ${formatPrice(o.shippingFee)} shipping` : 'Free shipping'}</span></p>
             {o.status === 'pending' ? (
               <PayNowButton order={o} onPaid={() => setVersion((v) => v + 1)} />
             ) : (

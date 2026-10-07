@@ -5,7 +5,7 @@ import { formatPrice, maxQuantity } from '../lib/format'
 import QuantityStepper from './QuantityStepper'
 
 export default function CartDrawer() {
-  const { open, setOpen, lines, subtotal, remove, setQuantity } = useCart()
+  const { open, setOpen, lines, subtotal, shipping, remove, setQuantity } = useCart()
 
   useEffect(() => {
     if (!open) return
@@ -37,7 +37,7 @@ export default function CartDrawer() {
         ) : (
           <>
             <div className="border-b border-line bg-mist px-5 py-2.5 text-xs">
-              <strong className="text-crimson">Free shipping</strong> on every order
+              <strong className="text-crimson">Free shipping</strong> on orders below ₹1,000
             </div>
             <ul className="flex-1 divide-y divide-line overflow-y-auto px-5">
               {lines.map((l) => (
@@ -61,7 +61,7 @@ export default function CartDrawer() {
                 <span>Subtotal</span>
                 <span className="font-semibold">{formatPrice(subtotal)}</span>
               </div>
-              <p className="mt-1 text-xs text-muted">Shipping: <strong className="text-ink">Free</strong></p>
+              <p className="mt-1 text-xs text-muted">Shipping: <strong className="text-ink">{shipping === 0 ? 'Free' : formatPrice(shipping)}</strong></p>
               <Link to="/checkout" onClick={() => setOpen(false)} className="btn btn-primary mt-4 w-full">Checkout</Link>
               <Link to="/cart" onClick={() => setOpen(false)} className="btn btn-ghost mt-2 w-full">View cart</Link>
             </div>

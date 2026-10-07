@@ -302,6 +302,7 @@ function Orders() {
             </div>
           </div>
           <p className="mt-3 text-muted">{o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</p>
+          <p className="mt-1 text-xs text-muted">Items {formatPrice(o.subtotal)} · Shipping {Number(o.shippingFee) > 0 ? formatPrice(o.shippingFee) : 'Free'} · Total {formatPrice(o.total)}</p>
           <div className="mt-2 rounded-md bg-mist px-3 py-2 text-xs">
             {captured ? (
               <p>

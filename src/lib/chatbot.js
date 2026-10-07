@@ -182,7 +182,7 @@ export async function answer(intent, text, ctx) {
     case 'delivery':
       return {
         text:
-          '• Shipping is free on every order — no minimum order value and no delivery charge.\n' +
+          '• Shipping is free on orders below ₹1,000. Orders of ₹1,000 or more have a flat ₹80 shipping charge.\n' +
           '• Orders are packed within 1–2 business days of payment.\n' +
           '• Delivery usually takes 3–7 business days after dispatch, depending on your location.\n' +
           '• Track your order any time from My Orders.',

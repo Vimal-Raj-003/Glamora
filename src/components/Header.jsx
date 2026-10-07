@@ -33,7 +33,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 bg-ink text-white">
       <div className="bg-crimson py-1.5 text-center text-xs font-medium tracking-wide">
-        Free shipping on every order
+        Free shipping on orders below ₹1,000
       </div>
       <div className="container-x flex h-16 items-center gap-2 sm:gap-4">
         <button className="-ml-2 flex h-11 w-11 items-center justify-center lg:hidden" onClick={() => setMenu(!menu)} aria-label="Toggle menu" aria-expanded={menu}>

@@ -1,7 +1,8 @@
 import { z } from 'zod'
 
-// Every order ships free: there is no shipping charge on any product or order value.
-export const SHIPPING_FEE = 0
+// Shipping rule: orders below Rs 1000 ship free; orders of Rs 1000 or more pay a flat Rs 80.
+export const FREE_SHIPPING_BELOW = 1000
+export const SHIPPING_FEE = 80
 export const ORDER_STATUSES = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']
 export const PAID_STATUSES = ['paid', 'processing', 'shipped', 'delivered']
 export const MIN_ORDER_PAISE = 100 // Razorpay's minimum is ₹1
@@ -40,8 +41,8 @@ export const addressSchema = z.object({
 
 export const money = (n) => Math.round(Number(n) * 100) / 100
 
-// Shipping is always free. Kept as a function so the order code has one clearly named place to ask.
-export const shippingFor = () => SHIPPING_FEE
+// The order code asks here. `subtotal` is the items total (before shipping); the server is the only source of truth.
+export const shippingFor = (subtotal) => (Number(subtotal) >= FREE_SHIPPING_BELOW ? SHIPPING_FEE : 0)
 
 export const adminEmails = () =>
   new Set(

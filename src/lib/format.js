@@ -2,9 +2,11 @@ const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR',
 
 export const formatPrice = (n) => inr.format(Number(n) || 0)
 
-// Every order ships free (the server applies the same rule when it prices an order).
-export const SHIPPING_FEE = 0
-export const shippingFor = () => SHIPPING_FEE
+// Orders below Rs 1000 ship free; Rs 1000 or more pay a flat Rs 80. This is only for showing the amount:
+// the server applies the same rule itself when it prices the order and creates the payment.
+export const FREE_SHIPPING_BELOW = 1000
+export const SHIPPING_FEE = 80
+export const shippingFor = (subtotal) => (Number(subtotal) >= FREE_SHIPPING_BELOW ? SHIPPING_FEE : 0)
 
 // Most a customer may put in the cart for a product (stock and any per-order limit)
 export const maxQuantity = (product) => Math.max(Math.min(product.stock ?? 99, product.maxPerOrder ?? 99), 0)

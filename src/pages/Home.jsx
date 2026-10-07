@@ -5,13 +5,13 @@ import ProductGrid from '../components/ProductGrid'
 import { Spinner, ErrorBox } from '../components/ui'
 
 const HERO_TRUST = [
-  { label: 'Free shipping', path: 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm10 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z' },
+  { label: 'Free shipping under ₹1,000', path: 'M3 7h11v9H3zM14 10h4l3 3v3h-7zM7 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm10 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z' },
   { label: 'Secure payments', path: 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4' },
   { label: 'Authentic products', path: 'M12 3l2.4 2.2 3.2-.3.9 3.1 2.8 1.7-1.2 3 1.2 3-2.8 1.7-.9 3.1-3.2-.3L12 21l-2.4-2.2-3.2.3-.9-3.1L2.7 14.3l1.2-3-1.2-3 2.8-1.7.9-3.1 3.2.3zM9 12l2 2 4-4' },
 ]
 
 const PERKS = [
-  { title: 'Free shipping', text: 'On every order, no minimum' },
+  { title: 'Free shipping', text: 'On orders below ₹1,000' },
   { title: 'Authentic products', text: '100% genuine, quality assured' },
   { title: 'Secure payments', text: 'Powered by Razorpay' },
   { title: 'Easy support', text: 'We’re here when you need us' },
@@ -101,8 +101,8 @@ export default function Home() {
         <div className="grid items-center gap-6 overflow-hidden rounded-xl bg-ink text-white md:grid-cols-2">
           <div className="p-8 sm:p-12">
             <p className="eyebrow">Free shipping</p>
-            <h2 className="mt-2 font-serif text-3xl font-semibold sm:text-4xl">Complete your kit, ships free</h2>
-            <p className="mt-3 text-sm text-white/70">Every order ships free across India, whatever the amount — no minimum, no delivery charge.</p>
+            <h2 className="mt-2 font-serif text-3xl font-semibold sm:text-4xl">Complete your kit, ships free under ₹1,000</h2>
+            <p className="mt-3 text-sm text-white/70">Orders below ₹1,000 ship free across India. Orders of ₹1,000 or more have a flat ₹80 shipping charge.</p>
             <Link to="/category/makeup-tools" className="btn btn-primary mt-6">Shop tools</Link>
           </div>
           <img src="/images/tools/1.avif" alt="" loading="lazy" className="h-64 w-full bg-white object-contain p-4 md:h-full" />

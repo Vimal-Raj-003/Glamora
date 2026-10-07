@@ -71,7 +71,7 @@ export default function ProductDetail() {
             </span>
             <span>
               Inclusive of all taxes
-              {' · Free shipping'}
+              {' · Free shipping below ₹1,000'}
               {product.maxPerOrder ? ` · Limit ${product.maxPerOrder} per order` : ''}
             </span>
           </p>
@@ -97,7 +97,7 @@ export default function ProductDetail() {
           <p className="order-3 mt-3 text-[15px] leading-relaxed text-graphite md:order-none">{product.description}</p>
 
           <ul className="order-4 mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-3 text-xs text-muted">
-            <li>✓ Free shipping on every order</li>
+            <li>✓ Free shipping on orders below ₹1,000</li>
             <li>✓ 100% authentic</li>
             <li>✓ Secure Razorpay checkout</li>
           </ul>
