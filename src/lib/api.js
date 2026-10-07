@@ -90,3 +90,10 @@ export const adminDeleteProduct = (id) => request(`/admin/products/${id}`, { met
 export const adminGetOrders = () => request('/admin/orders')
 export const adminUpdateOrderStatus = (id, status) => request(`/admin/orders/${id}/status`, { method: 'PATCH', body: { status } })
 export const adminGetCustomers = () => request('/admin/customers')
+export const adminGetCustomer = (id) => request(`/admin/customers/${id}`)
+export const adminGetPayments = () => request('/admin/payments')
+export const adminGetCategories = () => request('/admin/categories')
+export const adminSaveCategory = ({ id, ...data }) =>
+  id ? request(`/admin/categories/${id}`, { method: 'PUT', body: data }) : request('/admin/categories', { method: 'POST', body: data })
+export const adminDeleteCategory = (id) => request(`/admin/categories/${id}`, { method: 'DELETE' })
+export const adminGetSystem = () => request('/admin/system')

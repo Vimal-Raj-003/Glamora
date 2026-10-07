@@ -2,6 +2,8 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { ah, parse, HttpError, ORDER_STATUSES } from '../lib.js'
 import { productInclude } from './catalog.js'
+import { adminEmails, FREE_SHIPPING_BELOW, SHIPPING_FEE } from '../lib.js'
+import { clerkConfigured } from '../auth.js'
 
 const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
@@ -13,7 +15,13 @@ const productSchema = z.object({
   compareAtPrice: z.number().min(0).nullish(),
   stock: z.number().int().min(0),
   categoryId: z.string().min(1, 'Choose a category'),
-  imageUrl: z.string().trim().min(1, 'Add an image'),
+  // A site path, an https:// address, or an uploaded picture (small data: URL). Anything else (such as javascript:) is refused.
+  imageUrl: z
+    .string()
+    .trim()
+    .min(1, 'Add an image')
+    .max(300000, 'That image is too large')
+    .refine((v) => /^(\/(?!\/)|https?:\/\/|data:image\/(png|jpe?g|webp|avif);base64,)/i.test(v), 'Image must be a /path, an https:// address or an uploaded picture'),
   isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
   popularity: z.number().int().default(0),
@@ -32,6 +40,14 @@ const productData = (data) => ({
   slug: data.slug || slugify(data.name),
   compareAtPrice: data.compareAtPrice ?? null,
   maxPerOrder: data.maxPerOrder ?? null,
+})
+
+const categorySchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(80),
+  slug: z.string().trim().max(80).optional(),
+  description: z.string().trim().max(500).nullish().transform((v) => v || null),
+  imageUrl: z.string().trim().max(300000).nullish().transform((v) => v || null),
+  sortOrder: z.number().int().min(0).max(1000).default(0),
 })
 
 const DAY_OPTIONS = [7, 30, 90]
@@ -82,8 +98,15 @@ export function adminRouter(prisma, { requireAdmin }) {
     const statuses = Object.fromEntries(ORDER_STATUSES.map((s) => [s, 0]))
     for (const g of byStatus) statuses[g.status] = g._count._all
 
+    const recent = await prisma.order.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+      select: { id: true, status: true, total: true, createdAt: true, user: { select: { fullName: true, email: true } }, payments: { select: { status: true } } },
+    })
+
     res.json({
       days,
+      recent,
       totals: { revenue: Number(revenue._sum.amount || 0), orders: paidOrders, customers, products, activeProducts, lowStock },
       daily,
       statuses,
@@ -144,6 +167,83 @@ export function adminRouter(prisma, { requireAdmin }) {
     res.json(await prisma.order.update({ where: { id: order.id }, data: { status } }))
   }))
 
+  // ----- payments (every Razorpay payment we recorded, plus orders still waiting for a payment) -----
+  r.get('/payments', ah(async (req, res) => {
+    const who = { select: { fullName: true, email: true, phone: true } }
+    const [payments, unpaid] = await Promise.all([
+      prisma.payment.findMany({
+        select: { ...adminPayments.select, order: { select: { id: true, total: true, status: true, user: who } } },
+        orderBy: { createdAt: 'desc' },
+        take: 300,
+      }),
+      prisma.order.findMany({
+        where: { payments: { none: {} } },
+        select: { id: true, total: true, status: true, razorpayOrderId: true, createdAt: true, user: who },
+        orderBy: { createdAt: 'desc' },
+        take: 300,
+      }),
+    ])
+    res.json({ payments, unpaid })
+  }))
+
+  // ----- categories -----
+  r.get('/categories', ah(async (req, res) => {
+    const cats = await prisma.category.findMany({ orderBy: { sortOrder: 'asc' }, include: { _count: { select: { products: true } } } })
+    res.json(cats.map(({ _count, ...c }) => ({ ...c, productCount: _count.products })))
+  }))
+
+  r.post('/categories', ah(async (req, res) => {
+    const data = parse(categorySchema, req.body)
+    const created = await prisma.category
+      .create({ data: { ...data, slug: data.slug || slugify(data.name) } })
+      .catch(() => Promise.reject(new HttpError(409, 'A category with that name or slug already exists.')))
+    res.status(201).json(created)
+  }))
+
+  // The slug is the category's web address (and the header links use it), so it is never changed on edit.
+  r.put('/categories/:id', ah(async (req, res) => {
+    const { slug, ...data } = parse(categorySchema, req.body)
+    const updated = await prisma.category.update({ where: { id: req.params.id }, data }).catch((e) => {
+      throw e?.code === 'P2025' ? new HttpError(404, 'Category not found.') : e
+    })
+    res.json(updated)
+  }))
+
+  r.delete('/categories/:id', ah(async (req, res) => {
+    const count = await prisma.product.count({ where: { categoryId: req.params.id } })
+    if (count > 0) throw new HttpError(409, `This category still has ${count} product${count === 1 ? '' : 's'}. Move or delete them first.`)
+    await prisma.category.delete({ where: { id: req.params.id } }).catch((e) => {
+      throw e?.code === 'P2025' ? new HttpError(404, 'Category not found.') : e
+    })
+    res.json({ ok: true })
+  }))
+
+  // ----- system information (yes/no flags and public facts only; never a key or password) -----
+  r.get('/system', ah(async (req, res) => {
+    const keyId = process.env.RAZORPAY_KEY_ID || ''
+    const [users, orders, paidOrders, products, categories, unpaidOld] = await Promise.all([
+      prisma.user.count(),
+      prisma.order.count(),
+      prisma.order.count({ where: { payments: { some: { status: 'captured' } } } }),
+      prisma.product.count(),
+      prisma.category.count(),
+      prisma.order.count({ where: { status: 'pending', createdAt: { lt: new Date(Date.now() - 86400000) } } }),
+    ])
+    res.json({
+      database: { connected: true, users, orders, paidOrders, products, categories },
+      razorpay: {
+        configured: Boolean(keyId && process.env.RAZORPAY_KEY_SECRET),
+        mode: keyId.startsWith('rzp_live_') ? 'live' : keyId.startsWith('rzp_test_') ? 'test' : 'unknown',
+        webhookSecretSet: Boolean(process.env.RAZORPAY_WEBHOOK_SECRET),
+      },
+      clerk: { configured: clerkConfigured() },
+      superAdminEmails: adminEmails().size,
+      shipping: { freeBelow: FREE_SHIPPING_BELOW, fee: SHIPPING_FEE },
+      attention: { unpaidOrdersOlderThan24h: unpaidOld },
+      serverTime: new Date().toISOString(),
+    })
+  }))
+
   // ----- customers -----
   r.get('/customers', ah(async (req, res) => {
     const [users, totals] = await Promise.all([
@@ -163,6 +263,20 @@ export function adminRouter(prisma, { requireAdmin }) {
         totalSpent: Number(byUser.get(u.id)?._sum.total || 0),
       })),
     )
+  }))
+
+  // One customer with their full order history.
+  r.get('/customers/:id', ah(async (req, res) => {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      include: {
+        addresses: { orderBy: { createdAt: 'desc' }, take: 5 },
+        orders: { orderBy: { createdAt: 'desc' }, take: 100, include: { items: true, payments: adminPayments } },
+      },
+    })
+    if (!user) throw new HttpError(404, 'Customer not found.')
+    const { clerkId, ...safe } = user
+    res.json(safe)
   }))
 
   return r

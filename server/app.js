@@ -26,6 +26,8 @@ export function createApp({ prisma, authProvider }) {
 
   // CORS comes first so browsers' preflight (OPTIONS) requests are answered before anything else runs.
   app.use('/api', corsMiddleware())
+  // Admin product forms can carry a small uploaded picture; everything else stays small.
+  app.use('/api/admin', express.json({ limit: '600kb' }))
   app.use(express.json({ limit: '100kb' }))
   app.use('/api', rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false }))
   app.use('/api', authProvider.middleware)
