@@ -11,10 +11,10 @@ const HERO_TRUST = [
 ]
 
 const PERKS = [
-  { title: 'Free shipping', text: 'On orders below ₹1,000' },
-  { title: 'Authentic products', text: '100% genuine, quality assured' },
-  { title: 'Secure payments', text: 'Powered by Razorpay' },
-  { title: 'Easy support', text: 'We’re here when you need us' },
+  { title: 'Free shipping', short: 'Free shipping', text: 'On orders below ₹1,000', shortText: 'Below ₹1,000' },
+  { title: 'Authentic products', short: 'Authentic', text: '100% genuine, quality assured', shortText: '100% genuine' },
+  { title: 'Secure payments', short: 'Secure', text: 'Powered by Razorpay', shortText: 'Razorpay' },
+  { title: 'Easy support', short: 'Support', text: 'We’re here when you need us', shortText: 'We’re here' },
 ]
 
 export default function Home() {
@@ -120,11 +120,15 @@ export default function Home() {
 
       {/* Perks */}
       <section className="container-x mt-20">
-        <div className="grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
           {PERKS.map((p) => (
-            <div key={p.title} className="bg-white p-6 text-center">
-              <h3 className="font-serif text-lg font-semibold">{p.title}</h3>
-              <p className="mt-1 text-sm text-muted">{p.text}</p>
+            <div key={p.title} className="min-w-0 bg-white px-0.5 py-3 text-center sm:p-6">
+              <h3 className="whitespace-nowrap font-serif text-[12px] font-semibold leading-tight tracking-tight sm:whitespace-normal sm:text-lg sm:tracking-normal">
+                <span className="sm:hidden">{p.short}</span><span className="hidden sm:inline">{p.title}</span>
+              </h3>
+              <p className="mt-0.5 text-[11px] leading-tight text-muted sm:mt-1 sm:text-sm">
+                <span className="sm:hidden">{p.shortText}</span><span className="hidden sm:inline">{p.text}</span>
+              </p>
             </div>
           ))}
         </div>
