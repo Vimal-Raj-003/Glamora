@@ -1,6 +1,6 @@
 // Thin client for the Glamora API (Express + Prisma + Neon). This is the ONLY place the frontend talks to the backend.
 //
-// Production: the API runs on Vercel next to the website (api/[...path].js), so leave VITE_API_URL empty and calls go to /api.
+// Production: the API runs on Vercel next to the website (api/index.js), so leave VITE_API_URL empty and calls go to /api.
 // Local development: Vite proxies /api to http://localhost:4000.
 // VITE_API_URL is only needed if the API is ever hosted on a different address.
 const API_BASE = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '').replace(/\/api$/, '')
