@@ -33,6 +33,18 @@ export function createApp({ prisma, authProvider }) {
   const auth = createAuthMiddleware(authProvider, prisma)
 
   app.get('/api/health', (req, res) => res.json({ ok: true }))
+  // Database check for deployment troubleshooting. Reports only yes/no flags and an error code, never a value or message.
+  app.get('/api/health/db', async (req, res) => {
+    const env = { DATABASE_URL: Boolean(process.env.DATABASE_URL), DIRECT_URL: Boolean(process.env.DIRECT_URL) }
+    try {
+      await prisma.$queryRaw`SELECT 1`
+      const [categories, products] = await Promise.all([prisma.category.count(), prisma.product.count()])
+      res.json({ ok: true, env, categories, products })
+    } catch (e) {
+      console.error('[health/db]', e)
+      res.status(503).json({ ok: false, env, error: e?.name || 'Error', code: e?.code || e?.errorCode || null })
+    }
+  })
   app.use('/api', catalogRouter(prisma))
   app.use('/api/admin', adminRouter(prisma, auth))
   app.use('/api/orders', ordersRouter(prisma, auth))
