@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CATEGORY_LINKS, STORE } from '../config/store'
+import { openChat } from './ChatWidget'
 
 const POLICIES = [
   { to: '/privacy-policy', label: 'Privacy Policy' },
@@ -10,51 +11,59 @@ const POLICIES = [
 
 export default function Footer() {
   return (
-    <footer className="mt-24 bg-ink text-white">
-      <div className="container-x grid gap-10 py-14 md:grid-cols-4">
-        <div>
+    <footer className="mt-12 bg-ink text-white md:mt-24">
+      <div className="container-x grid grid-cols-2 gap-x-6 gap-y-5 py-8 md:grid-cols-4 md:gap-10 md:py-14">
+        <div className="col-span-2 md:col-span-1">
           <p className="font-serif text-2xl font-bold tracking-[0.18em]">
             GLAM<span className="text-crimson">ORA</span>
           </p>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60">
+          <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/60 md:mt-4">
             Premium makeup for every face. Bold colour, flawless finish and formulas you can trust.
           </p>
-          <p className="mt-4 text-sm text-white/60">
+          <p className="mt-4 hidden text-sm text-white/60 md:block">
             <a href={`mailto:${STORE.supportEmail}`} className="hover:text-crimson">{STORE.supportEmail}</a><br />
             <a href={`tel:${STORE.supportPhoneTel}`} className="inline-block py-2 hover:text-crimson">{STORE.supportPhone}</a>
           </p>
         </div>
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Shop</h4>
-          <ul className="mt-3 space-y-0 text-sm">
+          <ul className="mt-1 space-y-0 text-sm md:mt-3">
             {CATEGORY_LINKS.map((c) => (
               <li key={c.id}>
-                <Link to={`/category/${c.slug}`} className="inline-block py-2.5 text-white/80 hover:text-crimson">{c.name}</Link>
+                <Link to={`/category/${c.slug}`} className="block py-2 text-white/80 hover:text-crimson md:inline-block md:py-2.5">{c.name}</Link>
               </li>
             ))}
           </ul>
         </div>
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Account</h4>
-          <ul className="mt-3 space-y-0 text-sm">
-            <li><Link to="/account" className="inline-block py-2.5 text-white/80 hover:text-crimson">My orders</Link></li>
-            <li><Link to="/wishlist" className="inline-block py-2.5 text-white/80 hover:text-crimson">Wishlist</Link></li>
-            <li><Link to="/cart" className="inline-block py-2.5 text-white/80 hover:text-crimson">Cart</Link></li>
-            <li><Link to="/login" className="inline-block py-2.5 text-white/80 hover:text-crimson">Log in</Link></li>
+          <ul className="mt-1 space-y-0 text-sm md:mt-3">
+            <li><Link to="/account" className="block py-2 text-white/80 hover:text-crimson md:inline-block md:py-2.5">My orders</Link></li>
+            <li><Link to="/wishlist" className="block py-2 text-white/80 hover:text-crimson md:inline-block md:py-2.5">Wishlist</Link></li>
+            <li><Link to="/cart" className="block py-2 text-white/80 hover:text-crimson md:inline-block md:py-2.5">Cart</Link></li>
+            <li><Link to="/login" className="block py-2 text-white/80 hover:text-crimson md:inline-block md:py-2.5">Log in</Link></li>
+          </ul>
+        </div>
+        <div className="md:hidden">
+          <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Customer Care</h4>
+          <ul className="mt-1 space-y-0 text-sm">
+            <li><a href={`tel:${STORE.supportPhoneTel}`} className="block whitespace-nowrap py-2 text-white/80 hover:text-crimson">{STORE.supportPhone}</a></li>
+            <li><a href={`mailto:${STORE.supportEmail}`} className="block break-all py-2 text-white/80 hover:text-crimson">{STORE.supportEmail}</a></li>
+            <li><button type="button" onClick={openChat} className="block py-2 text-left text-white/80 hover:text-crimson">Chat with us</button></li>
           </ul>
         </div>
         <div>
-          <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50">Policies</h4>
-          <ul className="mt-3 space-y-0 text-sm">
+          <h4 className="text-xs font-semibold uppercase tracking-widest text-white/50"><span className="md:hidden">Legal</span><span className="hidden md:inline">Policies</span></h4>
+          <ul className="mt-1 space-y-0 text-sm md:mt-3">
             {POLICIES.map((p) => (
               <li key={p.to}>
-                <Link to={p.to} className="inline-block py-2.5 text-white/80 hover:text-crimson">{p.label}</Link>
+                <Link to={p.to} className="block py-2 text-white/80 hover:text-crimson md:inline-block md:py-2.5">{p.label}</Link>
               </li>
             ))}
           </ul>
         </div>
       </div>
-      <div className="border-t border-white/10 py-5 text-center text-xs text-white/50">
+      <div className="border-t border-white/10 pb-20 pt-4 text-center text-xs text-white/50 md:py-5">
         © {new Date().getFullYear()} {STORE.name}. All rights reserved.
       </div>
     </footer>
