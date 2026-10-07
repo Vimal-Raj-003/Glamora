@@ -12,9 +12,25 @@ const Unavailable = () => (
   />
 )
 
+// Phone-friendly Clerk form: full-width card, 44px+ touch targets, 16px text (stops iOS zooming into fields).
+const touch = { minHeight: '2.75rem' }
+const appearance = {
+  elements: {
+    rootBox: { width: '100%', maxWidth: '26rem' },
+    card: { width: '100%', maxWidth: '100%', boxSizing: 'border-box' },
+    formFieldInput: { ...touch, fontSize: '16px' },
+    formFieldInputShowPasswordButton: { minWidth: '2.75rem', minHeight: '2.75rem' },
+    formButtonPrimary: { ...touch, fontSize: '15px' },
+    socialButtonsBlockButton: touch,
+    footerActionLink: { display: 'inline-block', padding: '0.6rem 0.25rem' },
+    formResendCodeLink: { padding: '0.6rem 0.25rem' },
+    identityPreviewEditButton: { padding: '0.6rem 0.25rem' },
+  },
+}
+
 function Shell({ children, note }) {
   return (
-    <div className="container-x flex flex-col items-center py-12">
+    <div className="container-x flex flex-col items-center py-6 sm:py-12">
       {children}
       <p className="mt-6 max-w-sm text-center text-xs leading-relaxed text-muted">{note}</p>
     </div>
@@ -32,7 +48,7 @@ export function Login() {
         </>
       }
     >
-      <SignIn routing="path" path="/login" signUpUrl="/signup" fallbackRedirectUrl="/shop" />
+      <SignIn appearance={appearance} routing="path" path="/login" signUpUrl="/signup" fallbackRedirectUrl="/shop" />
     </Shell>
   )
 }
@@ -48,7 +64,7 @@ export function Signup() {
         </>
       }
     >
-      <SignUp routing="path" path="/signup" signInUrl="/login" fallbackRedirectUrl="/shop" />
+      <SignUp appearance={appearance} routing="path" path="/signup" signInUrl="/login" fallbackRedirectUrl="/shop" />
     </Shell>
   )
 }
