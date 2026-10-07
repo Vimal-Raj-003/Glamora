@@ -46,8 +46,8 @@ export default function ProductDetail() {
 
       {/* Image and details sit side by side from tablet up. The image height is limited by the screen height,
           so the price and the buy buttons are in the first view on laptops and desktops. */}
-      <div className="grid items-start gap-3 sm:gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-6 lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-10">
-        <div className="flex h-40 w-full items-center justify-center rounded-xl bg-mist p-3 sm:h-48 md:h-64 lg:h-[clamp(18rem,calc(100dvh-20rem),24rem)] lg:p-5">
+      <div className="grid items-start gap-3 sm:gap-4 md:grid-cols-[14rem_minmax(0,1fr)] md:gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
+        <div className="flex h-28 w-full items-center justify-center rounded-xl bg-mist p-2 sm:h-36 md:h-44 lg:h-64 lg:p-4">
           <img src={product.imageUrl} alt={product.name} className="h-full w-full object-contain mix-blend-multiply" />
         </div>
 
