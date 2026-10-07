@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { STORE } from '../config/store'
 import { formatPrice, formatDate } from '../lib/format'
 import { STATUS_LABELS, STATUS_STYLES } from '../lib/status'
-import { TOPICS, detectIntent, answer } from '../lib/chatbot'
+import { GROUPS, detectIntent, answer } from '../lib/chatbot'
 
 const OPEN_EVENT = 'glamora:open-chat'
 const isPhone = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
@@ -29,35 +29,16 @@ function ChatIcon({ className = 'h-6 w-6' }) {
   )
 }
 
-// The "Talk to Customer Support" fallback. The call only happens when the customer taps the call link.
+// The "Talk to Customer Support" fallback. The call only happens when the customer taps the call button.
 function SupportCard() {
-  const [shown, setShown] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(STORE.supportPhone.replace(/\s/g, ''))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      /* clipboard unavailable */
-    }
-  }
   return (
     <div className="rounded-xl border border-crimson/30 bg-crimson-soft/60 p-3.5">
-      <p className="text-sm font-semibold text-ink">Still need help?</p>
-      <p className="mt-0.5 text-xs text-graphite">Our customer support team can sort it out with you on a call.</p>
+      <p className="text-sm font-semibold text-ink">Need more help? Talk to Customer Support</p>
       <p className="mt-2 text-sm">Support number: <strong className="whitespace-nowrap">{STORE.supportPhone}</strong></p>
-      {!shown ? (
-        <button type="button" onClick={() => setShown(true)} className="btn btn-primary mt-3 min-h-11 w-full">Talk to Customer Support</button>
-      ) : (
-        <div className="mt-3 space-y-2">
-          <a href={`tel:${STORE.supportPhoneTel}`} className="btn btn-primary min-h-11 w-full" data-testid="call-support">
-            📞 Call Customer Support
-          </a>
-          <button type="button" onClick={copy} className="btn btn-outline min-h-11 w-full">{copied ? 'Number copied' : 'Copy number'}</button>
-          <p className="text-[11px] leading-snug text-muted">Tap “Call Customer Support” to open your phone’s dialer. Nothing is dialled until you press call.</p>
-        </div>
-      )}
+      <a href={`tel:${STORE.supportPhoneTel}`} className="btn btn-primary mt-3 min-h-11 w-full" data-testid="call-support">
+        📞 Call {STORE.supportPhone}
+      </a>
+      <p className="mt-2 text-[11px] leading-snug text-muted">On a phone this opens your dialer — nothing is dialled until you press call.</p>
     </div>
   )
 }
@@ -79,7 +60,7 @@ export default function ChatWidget() {
   const [busy, setBusy] = useState(false)
   const [misses, setMisses] = useState(0)
   const [messages, setMessages] = useState([
-    { id: 0, from: 'bot', text: 'Hi! 👋 I’m Glamora’s virtual assistant. I can help with products, orders, payments, delivery and returns. What do you need?', topics: true },
+    { id: 0, from: 'bot', text: 'Hi 👋 How can I help you today?', topics: true },
   ])
   const endRef = useRef(null)
   const inputRef = useRef(null)
@@ -131,7 +112,7 @@ export default function ChatWidget() {
       setMisses(next)
       push({
         from: 'bot',
-        text: 'I’m not sure I understood that. You can ask about products, prices, orders, payments, delivery or returns.',
+        text: 'I’m not sure I understood that. Please pick an option below or rephrase your question.',
         topics: true,
         support: next >= 2,
       })
@@ -149,11 +130,19 @@ export default function ChatWidget() {
     respond(detectIntent(text), text)
   }
 
-  const pickTopic = (t) => {
+  const pickGroup = (g) => {
+    if (busy) return
+    push({ from: 'user', text: g.label })
+    push({ from: 'bot', text: 'Sure — what do you need?', group: g.id })
+  }
+
+  const pickSub = (t) => {
     if (busy) return
     push({ from: 'user', text: t.label })
-    respond(t.id, t.id === 'product' || t.id === 'availability' ? '' : t.label)
+    respond(t.id, ['product', 'price', 'availability'].includes(t.id) ? '' : t.label)
   }
+
+  const backToMenu = () => push({ from: 'bot', text: 'Hi 👋 How can I help you today?', topics: true })
 
   const feedback = (yes) => {
     if (busy) return
@@ -194,7 +183,7 @@ export default function ChatWidget() {
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-crimson font-serif text-lg font-bold">G</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">Glamora Support</p>
-                <p className="truncate text-xs text-white/70">Ask about orders, payments, delivery…</p>
+                <p className="truncate text-xs text-white/70">We’re here to help</p>
               </div>
               <button type="button" onClick={close} aria-label="Close chat" className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-2xl leading-none hover:bg-white/10">×</button>
             </header>
@@ -240,11 +229,22 @@ export default function ChatWidget() {
 
                   {m.topics && m.id === lastBotId && (
                     <div className="flex flex-wrap gap-2">
-                      {TOPICS.map((t) => (
-                        <button key={t.id} type="button" onClick={() => pickTopic(t)} className="min-h-10 rounded-full border border-line bg-white px-3.5 text-xs font-medium hover:border-crimson hover:text-crimson">
+                      {GROUPS.map((g) => (
+                        <button key={g.id} type="button" onClick={() => pickGroup(g)} className="min-h-10 rounded-full border border-crimson bg-white px-4 text-sm font-medium text-crimson hover:bg-crimson hover:text-white">
+                          {g.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {m.group && m.id === lastBotId && (
+                    <div className="flex flex-wrap gap-2">
+                      {GROUPS.find((g) => g.id === m.group).subs.map((t) => (
+                        <button key={t.id} type="button" onClick={() => pickSub(t)} className="min-h-10 rounded-full border border-line bg-white px-3.5 text-sm font-medium hover:border-crimson hover:text-crimson">
                           {t.label}
                         </button>
                       ))}
+                      <button type="button" onClick={backToMenu} className="min-h-10 rounded-full px-3 text-xs font-semibold text-muted hover:text-crimson">← Back</button>
                     </div>
                   )}
 

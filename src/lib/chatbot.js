@@ -5,14 +5,35 @@ import { STORE, CATEGORY_LINKS } from '../config/store'
 import { formatPrice } from './format'
 import { STATUS_LABELS } from './status'
 
-export const TOPICS = [
-  { id: 'product', label: 'Product info & price' },
-  { id: 'availability', label: 'Is it in stock?' },
-  { id: 'order', label: 'Where is my order?' },
-  { id: 'payment', label: 'Payment & Razorpay' },
-  { id: 'delivery', label: 'Delivery & shipping' },
-  { id: 'returns', label: 'Returns & refunds' },
-  { id: 'account', label: 'Login & account' },
+// The chat starts with three simple choices; each one opens its own short list of questions.
+export const GROUPS = [
+  {
+    id: 'shopping',
+    label: 'Shopping Help',
+    subs: [
+      { id: 'product', label: 'Product information' },
+      { id: 'price', label: 'Price' },
+      { id: 'availability', label: 'Stock availability' },
+    ],
+  },
+  {
+    id: 'orders',
+    label: 'Order Help',
+    subs: [
+      { id: 'order', label: 'Where is my order?' },
+      { id: 'delivery', label: 'Delivery' },
+      { id: 'returns', label: 'Returns / Refunds' },
+    ],
+  },
+  {
+    id: 'support',
+    label: 'Payment / Support',
+    subs: [
+      { id: 'payment', label: 'Payment issue' },
+      { id: 'razorpay', label: 'Razorpay issue' },
+      { id: 'support', label: 'Talk to Customer Support' },
+    ],
+  },
 ]
 
 const STOP = new Set(
@@ -85,7 +106,7 @@ const stockLine = (p) => (p.stock <= 0 ? 'Out of stock' : p.stock <= 10 ? `Only 
 export async function answer(intent, text, ctx) {
   switch (intent) {
     case 'greeting':
-      return { text: 'Hello! 👋 I’m Glamora’s virtual assistant. Pick a topic below or just type your question.', topics: true }
+      return { text: 'Hi 👋 How can I help you today?', topics: true }
 
     case 'thanks':
       return { text: 'You’re welcome! Is there anything else I can help you with?', topics: true }
@@ -93,6 +114,7 @@ export async function answer(intent, text, ctx) {
     case 'support':
       return { text: 'Of course — our support team is happy to help you directly.', support: true }
 
+    case 'price':
     case 'product':
     case 'availability': {
       const hasWords = words(text).length > 0
@@ -109,7 +131,10 @@ export async function answer(intent, text, ctx) {
         return { text: `You can browse all our ${cat.name} products here:`, links: [{ label: `Shop ${cat.name}`, to: `/category/${cat.slug}` }], helpful: true }
       }
       return {
-        text: 'Which product are you looking for? Type a name such as “lipstick”, “kajal” or “foundation”, or browse a category:',
+        text:
+          intent === 'price'
+            ? 'Which product’s price would you like? Type a name such as “lipstick”, “kajal” or “foundation”, or browse a category:'
+            : 'Which product are you looking for? Type a name such as “lipstick”, “kajal” or “foundation”, or browse a category:',
         links: categoryLinks(),
       }
     }
@@ -139,6 +164,17 @@ export async function answer(intent, text, ctx) {
           '• Payment failed or you closed the window? Your order is saved. Open My Orders and tap “Complete payment”.\n' +
           '• Money deducted but the order says “Awaiting payment”? Please don’t pay again. Confirmation can take a few minutes — refresh My Orders. If it still isn’t confirmed, call our support team with your order number.\n' +
           '• Banks usually return a failed or double payment to your account within 5–7 working days.',
+        links: [{ label: 'My Orders', to: '/account' }],
+        helpful: true,
+      }
+
+    case 'razorpay':
+      return {
+        text:
+          'Razorpay is our secure payment window (UPI, cards, netbanking, wallets).\n\n' +
+          '• Window didn’t open? Allow pop-ups for this site, refresh, and tap Pay again.\n' +
+          '• UPI request not arriving? Check your UPI app’s pending requests, or try card / netbanking instead.\n' +
+          '• Paid but the order still says “Awaiting payment”? Don’t pay twice — open the order and tap “Confirm my payment”, or call our support team.',
         links: [{ label: 'My Orders', to: '/account' }],
         helpful: true,
       }
