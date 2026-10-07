@@ -13,12 +13,12 @@ export default function ProductCard({ product }) {
   return (
     <article className="group flex flex-col">
       <div className="relative">
-        <Link to={`/product/${product.slug}`} className="relative block aspect-[4/5] overflow-hidden rounded-lg bg-mist">
+        <Link to={`/product/${product.slug}`} className="relative block aspect-[5/4] overflow-hidden lg:aspect-[3/2] rounded-lg bg-mist">
           <img
             src={product.imageUrl}
             alt={product.name}
             loading="lazy"
-            className="h-full w-full object-contain p-4 mix-blend-multiply transition duration-500 group-hover:scale-105"
+            className="h-full w-full object-contain p-2 sm:p-3 mix-blend-multiply transition duration-500 group-hover:scale-105"
           />
           {(product.offerLabel || off > 0) && !soldOut && (
             <span className="absolute left-2.5 top-2.5 max-w-[calc(100%-4rem)] rounded bg-crimson px-2 py-1 text-[10px] font-bold uppercase leading-tight text-white sm:left-3 sm:top-3 sm:text-[11px]">
@@ -40,19 +40,19 @@ export default function ProductCard({ product }) {
           </svg>
         </button>
       </div>
-      <div className="mt-3 flex flex-1 flex-col">
+      <div className="mt-2 flex flex-1 flex-col">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">{product.category?.name}</p>
-        <Link to={`/product/${product.slug}`} className="mt-1 block py-2 font-medium leading-snug hover:text-crimson">
+        <Link to={`/product/${product.slug}`} className="mt-0.5 line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug hover:text-crimson sm:text-[15px] sm:min-h-[2.6rem]">
           {product.name}
         </Link>
-        <div className="mt-1.5 flex items-baseline gap-2">
+        <div className="mt-1 flex items-baseline gap-2">
           <span className="font-semibold">{formatPrice(product.price)}</span>
           {off > 0 && <span className="text-sm text-muted line-through">{formatPrice(product.compareAtPrice)}</span>}
         </div>
         <button
           onClick={() => add(product)}
           disabled={soldOut}
-          className="btn btn-outline btn-sm mt-3 w-full"
+          className="btn btn-outline btn-sm mt-2 w-full"
           aria-label={`Add ${product.name} to cart`}
         >
           {soldOut ? 'Out of stock' : 'Add to cart'}

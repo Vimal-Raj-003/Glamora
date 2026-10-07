@@ -22,7 +22,8 @@ async function request(path, { method = 'GET', body, query } = {}) {
   const headers = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
-  const token = tokenGetter ? await tokenGetter().catch(() => null) : null
+  // Don't let a slow sign-in service hold up public pages: wait at most 4 seconds for the session token.
+  const token = tokenGetter ? await Promise.race([tokenGetter().catch(() => null), new Promise((r) => setTimeout(() => r(null), 4000))]) : null
   if (token) headers.Authorization = `Bearer ${token}`
 
   const qs = query ? new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString() : ''

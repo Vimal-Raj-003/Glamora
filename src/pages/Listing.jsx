@@ -41,8 +41,8 @@ export default function Listing({ mode }) {
   return (
     <>
       <PageHeader eyebrow={mode === 'search' ? 'Search' : 'Collection'} title={title} subtitle={subtitle} />
-      <div className="container-x py-10">
-        <div className="mb-8 grid grid-cols-2 items-end gap-3 border-b border-line pb-5 sm:flex sm:flex-wrap sm:gap-4">
+      <div className="container-x py-4 sm:py-6">
+        <div className="mb-4 grid grid-cols-2 items-end gap-x-3 gap-y-2 border-b border-line pb-3 sm:flex sm:flex-wrap sm:gap-4">
           <p className="col-span-2 text-sm text-muted sm:mr-auto" aria-live="polite">
             {loading ? 'Loading…' : `${products.length} product${products.length === 1 ? '' : 's'}`}
           </p>

@@ -32,11 +32,11 @@ export function Empty({ title, text, actionTo, actionLabel }) {
 
 export function PageHeader({ eyebrow, title, subtitle }) {
   return (
-    <div className="bg-ink py-12 text-white sm:py-16">
+    <div className="bg-ink py-6 text-white sm:py-8">
       <div className="container-x">
         {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-        <h1 className="mt-2 font-serif text-4xl font-semibold sm:text-5xl">{title}</h1>
-        {subtitle && <p className="mt-3 max-w-xl text-sm text-white/70 sm:text-base">{subtitle}</p>}
+        <h1 className="mt-1 font-serif text-3xl font-semibold sm:text-4xl">{title}</h1>
+        {subtitle && <p className="mt-1.5 max-w-xl text-sm text-white/70 sm:text-base">{subtitle}</p>}
       </div>
     </div>
   )
