@@ -42,7 +42,7 @@ export function createApp({ prisma, authProvider }) {
       res.json({ ok: true, env, categories, products })
     } catch (e) {
       console.error('[health/db]', e)
-      res.status(503).json({ ok: false, env, error: e?.name || 'Error', code: e?.code || e?.errorCode || null })
+      res.status(503).json({ ok: false, env, error: e?.name || 'Error', code: e?.code || e?.errorCode || null, detail: String(e?.message || '').replace(/[a-z]+:\/\/\S+/gi, '<url>').replace(/\s+/g, ' ').slice(-450) })
     }
   })
   app.use('/api', catalogRouter(prisma))
