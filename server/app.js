@@ -35,7 +35,8 @@ export function createApp({ prisma, authProvider }) {
   app.get('/api/health', (req, res) => res.json({ ok: true }))
   // Database check for deployment troubleshooting. Reports only yes/no flags and an error code, never a value or message.
   app.get('/api/health/db', async (req, res) => {
-    const env = { DATABASE_URL: Boolean(process.env.DATABASE_URL), DIRECT_URL: Boolean(process.env.DIRECT_URL) }
+    const shape = (v) => (v ? { length: v.length, hasScheme: v.includes('://'), startsWith: /^postgres(ql)?:\/\//i.test(v), hasAtSign: v.includes('@'), hasSpace: /\s/.test(v) } : false)
+    const env = { DATABASE_URL: shape(process.env.DATABASE_URL), DIRECT_URL: shape(process.env.DIRECT_URL) }
     try {
       await prisma.$queryRaw`SELECT 1`
       const [categories, products] = await Promise.all([prisma.category.count(), prisma.product.count()])
