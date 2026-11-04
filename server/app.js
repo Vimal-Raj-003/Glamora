@@ -7,15 +7,21 @@ import rateLimit from 'express-rate-limit'
 import { createAuthMiddleware } from './auth.js'
 import { catalogRouter } from './routes/catalog.js'
 import { accountRouter } from './routes/account.js'
-import { ordersRouter, razorpayWebhookHandler } from './routes/orders.js'
+import { ordersRouter } from './routes/orders.js'
+import { ordersRouter as razorpayOrdersRouter, razorpayWebhookHandler } from './routes/razorpay-orders.js'
+import { createUpiService } from './services/upi.js'
+import { upiPreviewRouter } from './routes/upi-preview.js'
+import crypto from 'node:crypto'
 import { adminRouter } from './routes/admin.js'
 import { HttpError } from './lib.js'
 import { corsMiddleware } from './cors.js'
 
 const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist')
 
-export function createApp({ prisma, authProvider }) {
+export function createApp({ prisma, authProvider, upiService }) {
   const app = express()
+  const upi = upiService || createUpiService()
+  app.locals.upi = upi
   app.disable('x-powered-by')
   app.set('trust proxy', 1)
   // The API is called from a different website (Vercel), so responses must be readable cross-origin.
@@ -49,8 +55,19 @@ export function createApp({ prisma, authProvider }) {
     }
   })
   app.use('/api', catalogRouter(prisma))
-  app.use('/api/admin', adminRouter(prisma, auth))
-  app.use('/api/orders', ordersRouter(prisma, auth))
+  app.use('/api', upiPreviewRouter())
+  app.use('/api/admin', adminRouter(prisma, auth, upi))
+  const legacyOrders = razorpayOrdersRouter(prisma, auth)
+  // Accept verification callbacks for already-open Razorpay checkouts only.
+  app.use('/api/orders', (req, res, next) => req.path === '/verify' ? legacyOrders(req, res, next) : next())
+  app.use('/api/orders', process.env.PAYMENT_PROVIDER === 'razorpay' ? legacyOrders : ordersRouter(prisma, auth, upi))
+  app.get('/api/cron/upi', async (req, res, next) => {
+    const secret = process.env.CRON_SECRET || process.env.UPI_API_KEY
+    const got = Buffer.from(req.get('authorization') || '')
+    const want = Buffer.from(`Bearer ${secret || ''}`)
+    if (!secret || got.length !== want.length || !crypto.timingSafeEqual(got, want)) return res.status(401).json({ error: 'Unauthorized' })
+    try { res.json(await upi.sync()) } catch (e) { next(e) }
+  })
   app.use('/api', accountRouter(prisma, auth))
   app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }))
 

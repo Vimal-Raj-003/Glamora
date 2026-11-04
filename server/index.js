@@ -19,6 +19,7 @@ app.listen(port, () => {
 
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, async () => {
+    await app.locals.upi.close()
     await prisma.$disconnect()
     process.exit(0)
   })

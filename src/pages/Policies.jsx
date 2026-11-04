@@ -33,7 +33,7 @@ export function Privacy() {
       <ul>
         <li><strong>Account details:</strong> your name, email address and password (handled securely by our authentication provider).</li>
         <li><strong>Order details:</strong> shipping address, phone number, items purchased and order history.</li>
-        <li><strong>Payment details:</strong> payments are processed by Razorpay. We never see or store your card, UPI or bank details; we only receive a payment confirmation and reference ID.</li>
+        <li><strong>Payment details:</strong> you pay directly to our receiving account using UPI. We store the payment amount, UTR, order reference and parsed bank-credit evidence needed to verify and reconcile your payment. We never ask for your UPI PIN.</li>
         <li><strong>Usage data:</strong> basic technical information such as browser type and pages visited, to keep the site working and secure.</li>
       </ul>
 
@@ -45,7 +45,7 @@ export function Privacy() {
       </ul>
 
       <h2>Sharing your information</h2>
-      <p>We do not sell your personal information. We share it only with service providers who help us run the store — for example payment processing (Razorpay), authentication (Clerk), database hosting (Neon) and delivery partners — and only as needed to provide their service, or when required by law.</p>
+      <p>We do not sell your personal information. We share it only with service providers who help us run the store — for example authentication (Clerk), database hosting (Neon), bank-alert email delivery and delivery partners — and only as needed to provide their service, or when required by law.</p>
 
       <h2>Cookies</h2>
       <p>We use essential cookies and local storage to keep you signed in and to remember the items in your cart. We do not use them to track you across other websites.</p>
@@ -87,7 +87,7 @@ export function Terms() {
       </ul>
 
       <h2>Orders and payment</h2>
-      <p>An order is confirmed only after successful payment. Payments are processed securely by Razorpay. We reserve the right to refuse or cancel an order, for example where stock is unavailable or fraud is suspected.</p>
+      <p>An order is confirmed only after we verify a matching bank credit for your UPI payment. Checkout shows the exact payable amount, including a separately displayed 1–99 paise payment-matching adjustment. Bank-email delays may delay confirmation. We reserve the right to refuse or cancel an order, for example where stock is unavailable or fraud is suspected.</p>
 
       <h2>Shipping, returns and refunds</h2>
       <p>Please read our <Link to="/shipping-policy">Shipping Policy</Link> and <Link to="/return-refund-policy">Return &amp; Refund Policy</Link>, which form part of these terms.</p>
@@ -168,7 +168,7 @@ export function Returns() {
       <h2>Refunds</h2>
       <ul>
         <li>Once we receive and inspect the returned item, we will approve or reject the refund and let you know by email.</li>
-        <li>Approved refunds are issued to your original payment method (via Razorpay) within <strong>5–7 business days</strong>. Your bank may take additional time to show the credit.</li>
+        <li>Approved refunds are issued to your original payment method (via UPI) within <strong>5–7 business days</strong>. Your bank may take additional time to show the credit.</li>
         <li>At our discretion we may offer a replacement instead of a refund, where stock allows.</li>
       </ul>
 

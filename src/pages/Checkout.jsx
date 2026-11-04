@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { useToast } from '../context/ToastContext'
 import { getAddresses, saveAddress, createOrder, getProductsByIds } from '../lib/api'
-import { startPayment, confirmOnServer } from '../lib/razorpay'
+import UpiPayment from '../components/UpiPayment'
 import { formatPrice, shippingFor, maxQuantity } from '../lib/format'
 import { INDIAN_STATES, validateAddress as validate } from '../lib/india'
 import { PageHeader, Field, ErrorBox, Empty, Spinner } from '../components/ui'
@@ -16,7 +15,6 @@ const EMPTY = { fullName: '', phone: '', line1: '', line2: '', city: '', state: 
 export default function Checkout() {
   const { user, profile } = useAuth()
   const cart = useCart()
-  const toast = useToast()
   const navigate = useNavigate()
   const [params] = useSearchParams()
 
@@ -32,8 +30,7 @@ export default function Checkout() {
   const [saveForLater, setSaveForLater] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [retry, setRetry] = useState(false) // customer closed the popup once
-  const [unverified, setUnverified] = useState(null) // paid in Razorpay but not yet confirmed by our server
+  const [paymentInit, setPaymentInit] = useState(null)
 
   useEffect(() => {
     getAddresses()
@@ -81,7 +78,7 @@ export default function Checkout() {
   // After a successful payment: Buy now removes only the bought product from the cart; a normal checkout empties it.
   const afterPaid = (orderId) => {
     if (buyMode) cart.remove(buyProduct.id)
-    else cart.clear()
+    else lines.forEach((line) => cart.remove(line.productId))
     navigate(`/order/${orderId}`, { replace: true })
   }
 
@@ -104,46 +101,18 @@ export default function Checkout() {
       if (selected === 'new' && saveForLater) {
         await saveAddress({ ...address, isDefault: saved.length === 0 }).catch(() => {})
       }
-      // The server prices the order from the database and prepares the Razorpay order. If this exact purchase is
-      // still unpaid from an earlier attempt, the same order is returned, so retrying never creates duplicates.
       const init = await createOrder(lines, address)
-      await startPayment({
-        init,
-        prefill: { name: address.fullName, email: user.email, contact: address.phone },
-        onPaid: () => afterPaid(init.orderId),
-        onDismiss: () => {
-          setBusy(false)
-          setRetry(true)
-          toast('Payment not completed. Your order is saved - tap "Retry payment" when you are ready.', 'error')
-        },
-        onFailed: (message) => setError(message),
-        onVerifyError: (err, resp) => {
-          setBusy(false)
-          setUnverified({ orderId: init.orderId, resp })
-          setError(`Your payment went through but we could not confirm it yet (${err.message}). Do not pay again - use "Confirm my payment" below. Payment ID: ${resp.razorpay_payment_id}`)
-        },
-      })
+      setPaymentInit(init)
+      setBusy(false)
     } catch (err) {
       setBusy(false)
       setError(err.message)
     }
   }
 
-  // Safe to press more than once: the server records a payment only once.
-  const confirmAgain = async () => {
-    setBusy(true)
-    setError('')
-    try {
-      await confirmOnServer(unverified.orderId, unverified.resp)
-      afterPaid(unverified.orderId)
-    } catch (err) {
-      setBusy(false)
-      setError(`Still could not confirm the payment: ${err.message}. Please contact support with payment ID ${unverified.resp.razorpay_payment_id}.`)
-    }
-  }
-
   return (
     <>
+      {paymentInit && <UpiPayment init={paymentInit} onPaid={() => afterPaid(paymentInit.orderId)} onClose={() => { const id = paymentInit.orderId; setPaymentInit(null); navigate('/order/' + id) }} />}
       <PageHeader eyebrow={buyMode ? 'Buy now' : undefined} title="Checkout" />
       <form onSubmit={pay} className="container-x grid gap-10 py-10 lg:grid-cols-[1fr_24rem]" noValidate>
         <div className="min-w-0 space-y-8">
@@ -220,16 +189,10 @@ export default function Checkout() {
             <div className="flex justify-between border-t border-line pt-3 text-base font-bold"><dt>Total</dt><dd>{formatPrice(total)}</dd></div>
           </dl>
           {error && <div className="mt-4"><ErrorBox message={error} /></div>}
-          {unverified ? (
-            <button type="button" onClick={confirmAgain} className="btn btn-primary mt-5 min-h-12 w-full" disabled={busy}>
-              {busy ? 'Confirming…' : 'Confirm my payment'}
-            </button>
-          ) : (
-            <button className="btn btn-primary mt-5 min-h-12 w-full" disabled={busy}>
-              {busy ? 'Processing…' : `${retry ? 'Retry payment' : 'Pay'} ${formatPrice(total)}`}
-            </button>
-          )}
-          <p className="mt-3 text-center text-xs text-muted">Secure payment via Razorpay (UPI, cards, netbanking, wallets)</p>
+          <button className="btn btn-primary mt-5 min-h-12 w-full" disabled={busy}>
+            {busy ? 'Preparing...' : 'Continue to UPI payment'}
+          </button>
+          <p className="mt-3 text-center text-xs text-muted">The next screen shows the exact payable amount, including a 1-99 paise matching adjustment.</p>
           <p className="mt-2 text-center text-xs text-muted">
             By placing your order you agree to our <Link to="/terms-and-conditions" className="underline hover:text-crimson">Terms</Link>,{' '}
             <Link to="/shipping-policy" className="underline hover:text-crimson">Shipping</Link> and{' '}

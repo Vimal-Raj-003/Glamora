@@ -1,8 +1,12 @@
 node_modules
 dist
-.env
-.env.*
+.env*
 !.env.example
+# Raw bank messages and local credential material must never be committed.
+*.eml
+*.pem
+*.key
+.aws/
 *.log
 .DS_Store
 .vscode/*

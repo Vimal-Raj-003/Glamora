@@ -97,3 +97,8 @@ export const adminSaveCategory = ({ id, ...data }) =>
   id ? request(`/admin/categories/${id}`, { method: 'PUT', body: data }) : request('/admin/categories', { method: 'POST', body: data })
 export const adminDeleteCategory = (id) => request(`/admin/categories/${id}`, { method: 'DELETE' })
 export const adminGetSystem = () => request('/admin/system')
+
+// Authenticated UPI status and UTR lookups. Amounts never come from this client.
+export const getUpiStatus = (orderId, id) => request('/orders/' + orderId + '/payments/' + id)
+export const claimUpiUtr = (orderId, id, utr) => request('/orders/' + orderId + '/payments/' + id + '/utr', { method: 'POST', body: { utr } })
+export const adminGetUpiReview = () => request('/admin/upi/review')

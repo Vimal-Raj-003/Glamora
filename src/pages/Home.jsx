@@ -13,7 +13,7 @@ const HERO_TRUST = [
 const PERKS = [
   { title: 'Free shipping', short: 'Free shipping', text: 'On orders below ₹1,000', shortText: 'Below ₹1,000' },
   { title: 'Authentic products', short: 'Authentic', text: '100% genuine, quality assured', shortText: '100% genuine' },
-  { title: 'Secure payments', short: 'Secure', text: 'Powered by Razorpay', shortText: 'Razorpay' },
+  { title: 'Secure payments', short: 'Secure', text: 'Powered by UPI', shortText: 'UPI' },
   { title: 'Easy support', short: 'Support', text: 'We’re here when you need us', shortText: 'We’re here' },
 ]
 

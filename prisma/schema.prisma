@@ -145,9 +145,13 @@ model OrderItem {
 model Payment {
   id                String   @id @default(cuid())
   orderId           String
-  razorpayOrderId   String
-  razorpayPaymentId String   @unique
+  razorpayOrderId   String?
+  razorpayPaymentId String?   @unique
   razorpaySignature String?
+  provider          String   @default("razorpay")
+  upiPaymentId      String?  @unique
+  utr               String?  @unique
+  payableAmount     Decimal? @db.Decimal(10, 2)
   amount            Decimal  @db.Decimal(10, 2)
   status            String   @default("captured") // "captured" | "duplicate" (a second payment for an already-paid order: refund it)
   createdAt         DateTime @default(now())
@@ -155,4 +159,31 @@ model Payment {
   order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+}
+
+// Custom codemode-upi-pay Store. JSON payloads preserve the SDK record shape;
+// application-owned tables avoid conflicts with the upstream upi_* functions.
+model UpiAttempt {
+  id      String @id
+  payload Json
+  @@map("glamora_upi_attempts")
+}
+
+model UpiCredit {
+  utr       String @id
+  payload   Json
+  paymentId String? @unique
+  @@map("glamora_upi_credits")
+}
+
+model UpiInbox {
+  id          Int @id
+  lastUid     BigInt @default(0)
+  uidValidity String @default("")
+  lastRun     DateTime? @db.Timestamptz(3)
+  lastOk      DateTime? @db.Timestamptz(3)
+  lastError   String?
+  leaseToken  String?
+  leaseUntil  DateTime? @db.Timestamptz(3)
+  @@map("glamora_upi_inbox")
 }

@@ -30,7 +30,7 @@ export const GROUPS = [
     label: 'Payment / Support',
     subs: [
       { id: 'payment', label: 'Payment issue' },
-      { id: 'razorpay', label: 'Razorpay issue' },
+      { id: 'upi', label: 'UPI issue' },
       { id: 'support', label: 'Talk to Customer Support' },
     ],
   },
@@ -47,7 +47,7 @@ const rx = {
   thanks: /\b(thanks|thank you|thx|great|awesome|perfect|got it|that helps|helpful|resolved|solved)\b/i,
   returns: /return|refund|replace|exchange|damag|defect|broken|leak|wrong (item|product|shade)|missing|cancel|money back/i,
   order: /my order|order status|order id|track|tracking|where('?s| is) my|parcel|package|not received|yet to (arrive|receive)|order (placed|history|details)/i,
-  payment: /payment|pay\b|paid|razorpay|upi|card|netbank|net banking|wallet|deduct|debit|transaction|checkout|declin|otp|amount|charged|double/i,
+  payment: /payment|pay\b|paid|upi|card|netbank|net banking|wallet|deduct|debit|transaction|checkout|declin|otp|amount|charged|double/i,
   delivery: /deliver|shipping|ship\b|courier|dispatch|pin ?code|how long|arrive|days|free shipping|shipping (fee|charge)|cod|cash on delivery/i,
   account: /log ?in|sign ?in|sign ?up|register|password|account|e-?mail|verify|verification|code|google|logout|log out|profile/i,
   availability: /in stock|out of stock|available|availability|stock|sold out|restock/i,
@@ -160,7 +160,7 @@ export async function answer(intent, text, ctx) {
     case 'payment':
       return {
         text:
-          'We take payments securely through Razorpay (UPI, cards, netbanking and wallets).\n\n' +
+          'Pay directly to our receiving account with UPI. We confirm your order after matching a verified bank credit.\n\n' +
           '• Payment failed or you closed the window? Your order is saved. Open My Orders and tap “Complete payment”.\n' +
           '• Money deducted but the order says “Awaiting payment”? Please don’t pay again. Confirmation can take a few minutes — refresh My Orders. If it still isn’t confirmed, call our support team with your order number.\n' +
           '• Banks usually return a failed or double payment to your account within 5–7 working days.',
@@ -168,12 +168,12 @@ export async function answer(intent, text, ctx) {
         helpful: true,
       }
 
-    case 'razorpay':
+    case 'upi':
       return {
         text:
-          'Razorpay is our secure payment window (UPI, cards, netbanking, wallets).\n\n' +
+          'Our UPI checkout shows the exact payable amount, a QR and a payment note. Keep the amount and note unchanged.\n\n' +
           '• Window didn’t open? Allow pop-ups for this site, refresh, and tap Pay again.\n' +
-          '• UPI request not arriving? Check your UPI app’s pending requests, or try card / netbanking instead.\n' +
+          '• UPI request not arriving? Check your UPI app’s pending requests, or contact support instead.\n' +
           '• Paid but the order still says “Awaiting payment”? Don’t pay twice — open the order and tap “Confirm my payment”, or call our support team.',
         links: [{ label: 'My Orders', to: '/account' }],
         helpful: true,

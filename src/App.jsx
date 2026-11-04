@@ -5,7 +5,10 @@ import Home from './pages/Home'
 import Listing from './pages/Listing'
 import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
-import Checkout from './pages/Checkout'
+import UpiCheckout from './pages/Checkout'
+import UpiPreview from './pages/UpiPreview'
+import RazorpayCheckout from './pages/RazorpayCheckout'
+const Checkout = import.meta.env.VITE_PAYMENT_PROVIDER === 'razorpay' ? RazorpayCheckout : UpiCheckout
 import OrderConfirmation from './pages/OrderConfirmation'
 import { Login, Signup } from './pages/AuthPages'
 import Account from './pages/Account'
@@ -24,7 +27,8 @@ export default function App() {
         <Route path="search" element={<Listing mode="search" />} />
         <Route path="product/:slug" element={<ProductDetail />} />
         <Route path="cart" element={<Cart />} />
-        <Route path="checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
+        <Route path="checkout" element={import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === '1'
+          ? <UpiPreview /> : <RequireAuth><Checkout /></RequireAuth>} />
         <Route path="order/:id" element={<RequireAuth><OrderConfirmation /></RequireAuth>} />
         <Route path="wishlist" element={<RequireAuth><Wishlist /></RequireAuth>} />
         <Route path="login/*" element={<Login />} />

@@ -19,17 +19,23 @@
     "db:push": "node --env-file-if-exists=.env.local --env-file-if-exists=.env node_modules/prisma/build/index.js db push",
     "db:seed": "node --env-file-if-exists=.env.local --env-file-if-exists=.env prisma/seed.js",
     "db:setup": "npm run db:push && npm run db:seed",
-    "db:studio": "node --env-file-if-exists=.env.local --env-file-if-exists=.env node_modules/prisma/build/index.js studio"
+    "db:studio": "node --env-file-if-exists=.env.local --env-file-if-exists=.env node_modules/prisma/build/index.js studio",
+    "test": "node --test test/*.test.js",
+    "db:upi:migrate": "node scripts/migrate-upi.mjs"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.0.0",
     "@clerk/express": "^1.3.0",
     "@prisma/client": "^6.0.0",
+    "codemode-upi-pay": "github:codemodeai/codemode-upi-pay#144be72cca2f94a3ffb0fd14c9e56f34339fc2dc",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "express-rate-limit": "^7.4.0",
     "helmet": "^8.0.0",
+    "imapflow": "^2.10.0",
+    "mailparser": "^3.14.1",
+    "pg": "^8.23.1",
     "prisma": "^6.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -37,6 +43,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13",
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-react": "^4.3.0",
     "concurrently": "^9.0.0",

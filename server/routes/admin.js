@@ -53,9 +53,9 @@ const categorySchema = z.object({
 const DAY_OPTIONS = [7, 30, 90]
 
 // Payment fields the admin may see (the signature is never sent to the browser).
-const adminPayments = { select: { id: true, razorpayOrderId: true, razorpayPaymentId: true, amount: true, status: true, createdAt: true } }
+const adminPayments = { select: { provider: true, upiPaymentId: true, utr: true, payableAmount: true, id: true, razorpayOrderId: true, razorpayPaymentId: true, amount: true, status: true, createdAt: true } }
 
-export function adminRouter(prisma, { requireAdmin }) {
+export function adminRouter(prisma, { requireAdmin }, upi) {
   const r = Router()
   r.use(requireAdmin)
 
@@ -186,6 +186,10 @@ export function adminRouter(prisma, { requireAdmin }) {
     res.json({ payments, unpaid })
   }))
 
+  r.get('/upi/review', ah(async (req, res) => {
+    res.json({ attempts: await upi.store.listPayments({ limit: 100 }), unmatched: await upi.store.unmatchedAlerts(100), diagnostics: await upi.diagnostics() })
+  }))
+
   // ----- categories -----
   r.get('/categories', ah(async (req, res) => {
     const cats = await prisma.category.findMany({ orderBy: { sortOrder: 'asc' }, include: { _count: { select: { products: true } } } })
@@ -230,6 +234,7 @@ export function adminRouter(prisma, { requireAdmin }) {
       prisma.order.count({ where: { status: 'pending', createdAt: { lt: new Date(Date.now() - 86400000) } } }),
     ])
     res.json({
+      upi: await upi.diagnostics(),
       database: { connected: true, users, orders, paidOrders, products, categories },
       razorpay: {
         configured: Boolean(keyId && process.env.RAZORPAY_KEY_SECRET),

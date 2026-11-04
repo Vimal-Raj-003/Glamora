@@ -34,11 +34,11 @@ function Orders({ userId }) {
           <p className="mt-3 text-sm text-muted">{o.items.map((i) => `${i.name} × ${i.quantity}`).join(', ')}</p>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
             <p className="font-semibold">{formatPrice(o.total)} <span className="text-xs font-normal text-muted">· {Number(o.shippingFee) > 0 ? `incl. ${formatPrice(o.shippingFee)} shipping` : 'Free shipping'}</span></p>
-            {o.status === 'pending' ? (
+            {o.status === 'pending' && !o.payments?.some((p) => p.status === 'review' || p.status === 'duplicate') ? (
               <PayNowButton order={o} onPaid={() => setVersion((v) => v + 1)} />
             ) : (
               o.payments?.find((p) => p.status === 'captured') && (
-                <p className="text-xs text-muted">Paid · <span className="font-mono">{o.payments.find((p) => p.status === 'captured').razorpayPaymentId}</span></p>
+                <p className="text-xs text-muted">Paid · <span className="font-mono">{o.payments.find((p) => p.status === 'captured').utr || o.payments.find((p) => p.status === 'captured').razorpayPaymentId}</span></p>
               )
             )}
           </div>

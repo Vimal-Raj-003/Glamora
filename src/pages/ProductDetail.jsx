@@ -99,7 +99,7 @@ export default function ProductDetail() {
           <ul className="order-4 mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-3 text-xs text-muted">
             <li>✓ Free shipping on orders below ₹1,000</li>
             <li>✓ 100% authentic</li>
-            <li>✓ Secure Razorpay checkout</li>
+            <li>✓ Secure UPI checkout</li>
           </ul>
         </div>
       </div>

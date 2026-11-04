@@ -16,7 +16,8 @@ export default function OrderConfirmation() {
   if (!order) return <Empty title="Order not found" actionTo="/account" actionLabel="My orders" />
 
   const payment = order.payments?.find((p) => p.status === 'captured')
-  const unpaid = order.status === 'pending'
+  const review = order.payments?.some((p) => p.status === 'review' || p.status === 'duplicate')
+  const unpaid = order.status === 'pending' && !review
   const paid = Boolean(payment) && order.status !== 'cancelled'
   const a = order.shippingAddress
 
@@ -27,12 +28,12 @@ export default function OrderConfirmation() {
           {paid ? '✓' : '…'}
         </div>
         <h1 className="mt-5 font-serif text-4xl font-semibold">
-          {paid ? 'Thank you for your order!' : unpaid ? 'Payment pending' : 'Order ' + order.status}
+          {paid ? 'Thank you for your order!' : review ? 'Payment needs review' : unpaid ? 'Payment pending' : 'Order ' + order.status}
         </h1>
         <p className="mt-2 text-muted">
           {paid
             ? 'Your payment was successful. We’ll start packing your order right away.'
-            : unpaid
+            : review ? 'A credit was received. Please contact support before paying again.' : unpaid
               ? 'We haven’t received your payment yet. You can complete it below.'
               : 'This order is no longer active.'}
         </p>
@@ -62,12 +63,14 @@ export default function OrderConfirmation() {
         <dl className="space-y-1.5 border-t border-line pt-4 text-sm">
           <div className="flex justify-between"><dt>Subtotal</dt><dd>{formatPrice(order.subtotal)}</dd></div>
           <div className="flex justify-between"><dt>Shipping</dt><dd>{Number(order.shippingFee) === 0 ? 'Free' : formatPrice(order.shippingFee)}</dd></div>
-          <div className="flex justify-between text-base font-bold"><dt>Total</dt><dd>{formatPrice(order.total)}</dd></div>
+          <div className="flex justify-between text-base font-bold"><dt>Order total</dt><dd>{formatPrice(order.total)}</dd></div>
         </dl>
+        {payment?.provider === 'upi' && <p className="mt-4 text-sm">Amount received: {formatPrice(payment.amount)} (includes payment matching adjustment)</p>}
+        {order.payments?.some((p) => p.status === 'review' || p.status === 'duplicate') && <p className="mt-4 text-sm">Credit received; support review required. Do not pay again.</p>}
         {payment && (
           <div className="mt-6 border-t border-line pt-4 text-sm">
             <p className="label">Payment reference</p>
-            <span className="break-all font-mono text-xs">{payment.razorpayPaymentId}</span>
+            <span className="break-all font-mono text-xs">{payment.utr || payment.razorpayPaymentId}</span>
           </div>
         )}
         {a && (

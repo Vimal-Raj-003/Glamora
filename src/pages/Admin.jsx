@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext'
 import {
   getCategories, adminGetStats, adminGetProducts, adminSaveProduct, adminDeleteProduct,
   adminGetOrders, adminUpdateOrderStatus, adminGetCustomers, adminGetCustomer, adminGetPayments,
-  adminGetCategories, adminSaveCategory, adminDeleteCategory, adminGetSystem,
+  adminGetCategories, adminSaveCategory, adminDeleteCategory, adminGetSystem, adminGetUpiReview,
 } from '../lib/api'
 import { STORE } from '../config/store'
 import { formatPrice, formatDate, slugify } from '../lib/format'
@@ -391,7 +391,7 @@ function Orders() {
             {captured ? (
               <p>
                 <strong className="text-emerald-700">Payment received</strong> {formatPrice(captured.amount)} on {formatDate(captured.createdAt)}
-                <span className="block break-all text-muted sm:inline sm:before:content-['_·_']">Razorpay payment <span className="font-mono">{captured.razorpayPaymentId}</span>, order <span className="font-mono">{captured.razorpayOrderId}</span></span>
+                <span className="block break-all text-muted sm:inline sm:before:content-['_·_']">Payment reference <span className="font-mono">{captured.utr || captured.razorpayPaymentId}</span>, order <span className="font-mono">{captured.upiPaymentId || captured.razorpayOrderId}</span></span>
               </p>
             ) : (
               <p className="text-muted">
@@ -401,7 +401,7 @@ function Orders() {
             )}
             {duplicates.map((p) => (
               <p key={p.id} className="mt-1 font-semibold text-crimson">
-                Duplicate payment {formatPrice(p.amount)} ({p.razorpayPaymentId}) - refund this in the Razorpay dashboard.
+                Duplicate payment {formatPrice(p.amount)} ({p.utr || p.razorpayPaymentId}) - contact support to refund using the original payment provider.
               </p>
             ))}
           </div>
@@ -502,10 +502,26 @@ function Customers() {
 }
 
 const PAY_STATUS = {
+  review: { label: 'Review required', style: 'bg-crimson-soft text-crimson' },
   captured: { label: 'Success', style: 'bg-emerald-50 text-emerald-700' },
   duplicate: { label: 'Duplicate - refund', style: 'bg-crimson-soft text-crimson' },
   pending: { label: 'Pending', style: 'bg-amber-50 text-amber-700' },
   cancelled: { label: 'Not paid (cancelled)', style: 'bg-mist text-muted' },
+}
+
+function UpiReview() {
+  const { data, loading, error } = useAsync(adminGetUpiReview, [])
+  if (loading) return <p className="text-sm">Loading UPI verification records...</p>
+  if (error) return <ErrorBox message={error} />
+  const attempts = data.attempts.filter((p) => ['underpaid', 'overpaid'].includes(p.status))
+  return <section className="mb-6 rounded-lg border border-line p-4">
+    <h3 className="font-semibold">UPI credits requiring review</h3>
+    <p className="mt-1 text-xs text-muted">Do not fulfill unmatched or mismatched credits. Verify them with the bank and contact the customer. Refunds are manual.</p>
+    {!attempts.length && !data.unmatched.length && <p className="mt-2 text-sm">No unmatched or mismatched credits.</p>}
+    {[...attempts, ...data.unmatched].map((p) => <p key={p.id || p.utr} className="mt-2 break-all text-sm">
+      {p.orderId ? 'Order ' + p.orderId : 'Unmatched credit'} | {p.status || 'unmatched'} | {formatPrice(p.paidAmount || p.amount)} | UTR {p.utr}
+    </p>)}
+  </section>
 }
 
 function Payments() {
@@ -516,7 +532,7 @@ function Payments() {
   const rows = [
     ...data.payments.map((p) => ({
       key: p.id, date: p.createdAt, kind: p.status, amount: p.amount, orderId: p.order.id, user: p.order.user,
-      payId: p.razorpayPaymentId, rzpOrder: p.razorpayOrderId,
+      payId: p.utr || p.razorpayPaymentId, rzpOrder: p.upiPaymentId || p.razorpayOrderId,
     })),
     ...data.unpaid.map((o) => ({
       key: o.id, date: o.createdAt, kind: o.status === 'cancelled' ? 'cancelled' : 'pending', amount: o.total, orderId: o.id, user: o.user,
@@ -524,17 +540,18 @@ function Payments() {
     })),
   ].sort((a, b) => new Date(b.date) - new Date(a.date))
 
-  if (!rows.length) return <p className="text-sm text-muted">No payments yet.</p>
+  if (!rows.length) return <><UpiReview /><p className="text-sm text-muted">No payments yet.</p></>
   return (
     <div>
+      <UpiReview />
       <p className="mb-3 text-xs text-muted">
-        Successful payments and duplicates are recorded when Razorpay confirms them. “Pending” orders have been created but no payment has been received.
-        Individual failed card/UPI attempts are not stored here - see the Razorpay dashboard for those.
+        Successful payments and duplicates are recorded after backend verification. “Pending” orders have been created but no payment has been received.
+        UPI credits with missing notes or mismatched amounts require support review.
       </p>
       <div className="overflow-hidden rounded-lg border border-line">
         <table className="w-full text-left text-sm">
           <thead className="hidden bg-mist text-xs uppercase tracking-wider text-muted md:table-header-group">
-            <tr><th className="p-3">Date</th><th className="p-3">Customer</th><th className="p-3">Order</th><th className="p-3">Amount</th><th className="p-3">Status</th><th className="p-3">Razorpay IDs</th></tr>
+            <tr><th className="p-3">Date</th><th className="p-3">Customer</th><th className="p-3">Order</th><th className="p-3">Amount</th><th className="p-3">Status</th><th className="p-3">Payment references</th></tr>
           </thead>
           <tbody className="block divide-y divide-line md:table-row-group">
             {rows.map((r) => (
@@ -653,7 +670,9 @@ function System() {
   const money = (n) => `₹${n.toLocaleString('en-IN')}`
   const rows = [
     ['Database (Neon)', flag(data.database.connected, 'Connected', 'Not connected')],
-    ['Payments (Razorpay)', data.razorpay.configured ? <span className="font-semibold">{data.razorpay.mode === 'live' ? <span className="text-emerald-700">LIVE mode</span> : data.razorpay.mode === 'test' ? 'TEST mode' : 'Configured'}</span> : flag(false, '', 'Not configured')],
+    ['UPI checkout', flag(data.upi?.enabled, 'Enabled', 'Awaiting bank-email validation')],
+    ['UPI bank connection', <span>{data.upi?.lastError || (data.upi?.lastOk ? 'Last sync succeeded' : 'Not verified yet')}</span>],
+    ['Rollback (Razorpay)', data.razorpay.configured ? <span className="font-semibold">{data.razorpay.mode === 'live' ? <span className="text-emerald-700">LIVE mode</span> : data.razorpay.mode === 'test' ? 'TEST mode' : 'Configured'}</span> : flag(false, '', 'Not configured')],
     ['Razorpay webhook secret', flag(data.razorpay.webhookSecretSet, 'Set', 'Not set (optional)')],
     ['Sign-in (Clerk)', flag(data.clerk.configured, 'Configured', 'Not configured')],
     ['Super Admin emails', <span className="font-semibold">{data.superAdminEmails} listed</span>],
