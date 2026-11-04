@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useSearchParams } from 'react-router-dom'
 import Layout from './components/Layout'
 import { RequireAuth, RequireAdmin } from './components/Guards'
 import Home from './pages/Home'
@@ -17,6 +17,14 @@ import Admin from './pages/Admin'
 import { Privacy, Terms, Shipping, Returns } from './pages/Policies'
 import NotFound from './pages/NotFound'
 
+function CheckoutRoute() {
+  const [params] = useSearchParams()
+  if (params.get('preview') === '1') {
+    return import.meta.env.DEV ? <UpiPreview local /> : <RequireAdmin><UpiPreview /></RequireAdmin>
+  }
+  return <RequireAuth><Checkout /></RequireAuth>
+}
+
 export default function App() {
   return (
     <Routes>
@@ -27,8 +35,7 @@ export default function App() {
         <Route path="search" element={<Listing mode="search" />} />
         <Route path="product/:slug" element={<ProductDetail />} />
         <Route path="cart" element={<Cart />} />
-        <Route path="checkout" element={import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === '1'
-          ? <UpiPreview /> : <RequireAuth><Checkout /></RequireAuth>} />
+        <Route path="checkout" element={<CheckoutRoute />} />
         <Route path="order/:id" element={<RequireAuth><OrderConfirmation /></RequireAuth>} />
         <Route path="wishlist" element={<RequireAuth><Wishlist /></RequireAuth>} />
         <Route path="login/*" element={<Login />} />

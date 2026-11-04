@@ -1,21 +1,25 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getUpiPreview } from '../lib/api'
 
-export default function UpiPreview() {
+export default function UpiPreview({ local = false }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   useEffect(() => {
     let cancelled = false
-    fetch('/api/dev/upi-preview').then(async (r) => {
+    const load = local ? fetch('/api/dev/upi-preview').then(async (r) => {
       const d = await r.json()
-      if (!r.ok) throw new Error(d.error || 'Local preview unavailable.')
+      if (!r.ok) throw new Error(d.error || 'UPI preview unavailable.')
+      return d
+    }) : getUpiPreview()
+    load.then((d) => {
       if (!cancelled) setData(d)
     }).catch((e) => { if (!cancelled) setError(e.message) })
     return () => { cancelled = true }
-  }, [])
+  }, [local])
   return <section className="container-x max-w-xl py-12">
     <h1 className="font-serif text-3xl font-semibold">Checkout · UPI QR preview</h1>
-    <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm font-semibold">Local preview only. Scan to inspect the destination, then cancel in your payment app. Do not tap Pay or enter your UPI PIN.</p>
+    <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm font-semibold">Destination preview only. This QR can open a real UPI transfer screen: scan to inspect the destination, then cancel. Do not tap Pay or enter your UPI PIN.</p>
     {error && <p className="mt-4 text-red-700" role="alert">{error}</p>}
     {!data && !error && <p className="mt-4">Preparing QR…</p>}
     {data && <div className="mt-6 rounded-lg border border-line bg-white p-6">

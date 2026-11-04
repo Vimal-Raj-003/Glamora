@@ -1,4 +1,3 @@
-import crypto from 'node:crypto'
 import { classifyCredit, paise } from './upi-security.js'
 import { HttpError } from '../lib.js'
 
@@ -31,11 +30,9 @@ export class GlamoraUpiStore {
       if (reusable) return reusable
       if (old.some((p) => ['paid', 'underpaid', 'overpaid'].includes(p.status))) throw new HttpError(409, 'A credit needs confirmation or support review. Do not pay again.')
       if (old.filter((p) => Date.parse(p.expiresAt) > Date.now()).length >= 5) throw new HttpError(429, 'Too many open attempts. Wait before retrying.')
-      const open = payloads(await c.query("SELECT payload FROM glamora_upi_attempts WHERE (payload->>'expiresAt')::timestamptz > now()-interval '30 minutes'"))
-      const used = new Set(open.map((p) => paise(p.payAmount)))
-      const free = Array.from({ length: 99 }, (_, n) => paise(i.amount) + n + 1).filter((n) => !used.has(n))
-      if (!free.length) throw new HttpError(429, 'Payments are busy for this amount. Please try later.')
-      const p = { ...i, payAmount: free[crypto.randomInt(free.length)] / 100, status: 'pending',
+      // Amounts are never used to attribute payments: only verified references.
+      // New customer QR codes request the exact server-calculated order total.
+      const p = { ...i, payAmount: paise(i.amount) / 100, status: 'pending',
         createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 600000).toISOString(),
         paidAt: null, paidAmount: null, utr: null, bank: null, payer: null, matchedBy: null, utrTries: 0,
         destination: this.config.vpa, accountLast4: this.config.account }

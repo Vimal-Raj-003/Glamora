@@ -18,15 +18,19 @@ export function createUpiService({ env = process.env, pool: suppliedPool, inboxR
     store, refPrefix: 'GLM', testMode: false, logger: { info() {}, warn() {}, error() {} } }) : null
   let running
   const requireReady = () => {
-    if (!enabled || !sdk) throw new HttpError(503, 'UPI checkout is awaiting bank-email verification setup. Please contact support before paying.')
+    if (!sdk) throw new HttpError(503, 'UPI QR generation requires UPI_ID and UPI_NAME on the server.')
+  }
+  const requireVerification = () => {
+    if (!enabled) throw new HttpError(503, 'Automatic bank verification is disabled. Payment remains pending; contact support before paying again.')
   }
   async function reconcile() {
+    requireVerification()
     const rows = await pool.query(`SELECT a.id FROM glamora_upi_attempts a
       WHERE a.payload->>'status'='paid' AND NOT EXISTS(SELECT 1 FROM "Payment" p WHERE p."upiPaymentId"=a.id) LIMIT 50`)
     for (const r of rows.rows) await finalizeUpiOrder(store, r.id)
   }
   async function sync() {
-    requireReady()
+    requireVerification()
     if (running) return running
     running = (async () => {
       let error = null
@@ -58,7 +62,16 @@ export function createUpiService({ env = process.env, pool: suppliedPool, inboxR
     store, enabled, requireReady, sync, reconcile,
     async create(order) {
       requireReady()
-      if ((await store.listPayments({ orderId: order.id, limit: 1 })).length) {
+      const existing = await store.listPayments({ orderId: order.id, limit: 1 })
+      if (existing.length && !enabled) {
+        if (existing[0].destination !== config.vpa || Math.round(existing[0].amount * 100) !== Math.round(Number(order.total) * 100)) {
+          throw new HttpError(409, 'The existing payment request needs support review before another QR can be shown.')
+        }
+        // Reuse even an expired attempt while verification is unavailable. Never
+        // issue another request for money when an earlier transfer cannot be checked.
+        return { orderId: order.id, payment: await publicPayment(existing[0].id), verificationEnabled: false }
+      }
+      if (existing.length && enabled) {
         const recovered = await sync()
         if (recovered.delayed) throw new HttpError(503, 'Bank confirmation is delayed. Do not pay again; check your order later.')
       }
@@ -69,19 +82,19 @@ export function createUpiService({ env = process.env, pool: suppliedPool, inboxR
       const ref = 'GLM' + Array.from({ length: 8 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[crypto.randomInt(32)]).join('')
       const p = await store.createPayment({ id: 'pay_' + crypto.randomBytes(12).toString('hex'), ref,
         amount: cents / 100, orderId: order.id, metadata: {} })
-      return { orderId: order.id, payment: await publicPayment(p.id) }
+      return { orderId: order.id, payment: await publicPayment(p.id), verificationEnabled: enabled }
     },
     async status(orderId, id) {
       requireReady()
       const p = await store.getPayment(id)
       if (!p || p.orderId !== orderId) throw new HttpError(404, 'Payment not found.')
-      const result = await sync()
+      const result = enabled ? await sync() : { delayed: false }
       const payment = await publicPayment(id)
       const recorded = (await pool.query('SELECT status FROM "Payment" WHERE "upiPaymentId"=$1', [id])).rows[0]
-      return { payment, ...result, finalized: recorded?.status === 'captured', review: recorded?.status === 'review' || recorded?.status === 'duplicate' }
+      return { payment, ...result, verificationEnabled: enabled, finalized: recorded?.status === 'captured', review: recorded?.status === 'review' || recorded?.status === 'duplicate' }
     },
     async claim(orderId, id, utr) {
-      requireReady()
+      requireVerification()
       const p = await store.getPayment(id)
       if (!p || p.orderId !== orderId) throw new HttpError(404, 'Payment not found.')
       if (!/^\d{12}$/.test(utr)) throw new HttpError(400, 'Enter a 12-digit UTR.')
@@ -89,7 +102,7 @@ export function createUpiService({ env = process.env, pool: suppliedPool, inboxR
       const claim = await store.claimUtr(id, utr)
       return { ...(await this.status(orderId, id)), result: claim.result, triesLeft: Math.max(0, 5 - claim.payment.utrTries) }
     },
-    async diagnostics() { return { configured: config.ready, enabled, ...(await store.syncStatus()) } },
+    async diagnostics() { return { configured: config.ready, qrConfigured: Boolean(sdk), enabled, ...(await store.syncStatus()) } },
     close: () => pool.end(),
   }
 }

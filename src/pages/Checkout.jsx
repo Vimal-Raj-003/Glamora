@@ -192,7 +192,7 @@ export default function Checkout() {
           <button className="btn btn-primary mt-5 min-h-12 w-full" disabled={busy}>
             {busy ? 'Preparing...' : 'Continue to UPI payment'}
           </button>
-          <p className="mt-3 text-center text-xs text-muted">The next screen shows the exact payable amount, including a 1-99 paise matching adjustment.</p>
+          <p className="mt-3 text-center text-xs text-muted">The QR requests the exact total calculated by the server. An order is paid only after verified bank confirmation.</p>
           <p className="mt-2 text-center text-xs text-muted">
             By placing your order you agree to our <Link to="/terms-and-conditions" className="underline hover:text-crimson">Terms</Link>,{' '}
             <Link to="/shipping-policy" className="underline hover:text-crimson">Shipping</Link> and{' '}

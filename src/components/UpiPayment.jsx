@@ -5,7 +5,10 @@ import { formatPrice } from '../lib/format'
 // Every request uses the existing Clerk bearer-token API client.
 export default function UpiPayment({ init, onPaid, onClose }) {
   const [payment, setPayment] = useState(init.payment)
-  const [message, setMessage] = useState('Waiting for the bank confirmation. Keep the payment note unchanged.')
+  const [verificationEnabled, setVerificationEnabled] = useState(init.verificationEnabled !== false)
+  const [message, setMessage] = useState(init.verificationEnabled === false
+    ? 'Payment pending. Automatic verification is unavailable: do not send money until support confirms readiness.'
+    : 'Waiting for the bank confirmation. Keep the payment note unchanged.')
   const [utr, setUtr] = useState('')
   const [busy, setBusy] = useState(false)
   const [remaining, setRemaining] = useState(() => Math.max(0, Math.ceil((Date.parse(init.payment.expiresAt) - Date.now()) / 1000)))
@@ -14,8 +17,10 @@ export default function UpiPayment({ init, onPaid, onClose }) {
   callback.current = onPaid
   const apply = (r) => {
     setPayment(r.payment)
+    setVerificationEnabled(r.verificationEnabled !== false)
     if (r.finalized && !done.current) { done.current = true; callback.current?.(); return }
-    if (r.review) setMessage('Credit received, but this order needs support review. Do not pay again.')
+    if (r.verificationEnabled === false) setMessage('Payment pending. Automatic verification is unavailable. If you already paid, contact support with your UTR and do not pay again.')
+    else if (r.review) setMessage('Credit received, but this order needs support review. Do not pay again.')
     else if (r.delayed) setMessage('Bank confirmation is delayed. If you paid, do not pay again. You can return to this order later.')
     else if (r.payment.status === 'underpaid') setMessage('The bank reported less than the exact amount. Contact support with your UTR; do not send a top-up.')
     else if (r.payment.status === 'overpaid') setMessage('The bank reported more than the exact amount. Contact support with your UTR; do not pay again.')
@@ -46,20 +51,20 @@ export default function UpiPayment({ init, onPaid, onClose }) {
       <h2 className="font-serif text-2xl font-semibold">Pay with UPI</h2>
       <dl className="mt-4 space-y-2 text-sm">
         <div className="flex justify-between"><dt>Order total</dt><dd>{formatPrice(payment.amount)}</dd></div>
-        <div className="flex justify-between"><dt>Payment matching adjustment</dt><dd>{formatPrice(payment.extraPaise / 100)}</dd></div>
+        {payment.extraPaise > 0 && <div className="flex justify-between"><dt>Existing attempt adjustment</dt><dd>{formatPrice(payment.extraPaise / 100)}</dd></div>}
         <div className="flex justify-between font-bold"><dt>Pay exactly</dt><dd>{formatPrice(payment.payAmount)}</dd></div>
       </dl>
       <p className="mt-2 break-all text-sm">To: {payment.payeeName} · {payment.upiId}</p>
       {open && <>
         <img className="mx-auto my-4 h-52 w-52" alt="Scan this UPI payment QR" src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(payment.qr)}`} />
-        <a className="btn btn-primary w-full" href={payment.link}>Open UPI app · {formatPrice(payment.payAmount)}</a>
+        {verificationEnabled && <a className="btn btn-primary w-full" href={payment.link}>Open UPI app · {formatPrice(payment.payAmount)}</a>}
         <p className="mt-2 text-center text-xs">QR expires in {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
       </>}
       <p className="mt-3 break-all text-sm">Payment note: <strong>{payment.ref}</strong></p>
       <p className="mt-3 text-sm" role="status">{message}</p>
       <label className="mt-4 block text-sm" htmlFor="upi-utr">Already paid? Enter the 12-digit UTR</label>
       <input id="upi-utr" className="input mt-1 w-full" inputMode="numeric" maxLength={12} value={utr} onChange={(e) => setUtr(e.target.value.replace(/\D/g, ''))} />
-      <button type="button" className="btn btn-outline mt-2 w-full" disabled={busy || utr.length !== 12} onClick={claim}>{busy ? 'Checking bank confirmation…' : 'Check payment'}</button>
+      <button type="button" className="btn btn-outline mt-2 w-full" disabled={!verificationEnabled || busy || utr.length !== 12} onClick={claim}>{busy ? 'Checking bank confirmation…' : 'Check payment'}</button>
       <button type="button" className="btn btn-ghost mt-2 w-full" onClick={onClose}>Close · return to order later</button>
     </section>
   </div>

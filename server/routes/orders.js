@@ -61,7 +61,7 @@ export function ordersRouter(prisma, { requireUser }, upi) {
     const order = await ownOrder(req)
     if (order.status !== 'pending' || order.payments.length) throw new HttpError(409, 'This order is paid or requires support review.')
     if (order.razorpayOrderId) throw new HttpError(409, 'This older payment must be resolved with support before starting UPI. Do not pay twice.')
-    const recovered = await upi.sync()
+    const recovered = upi.enabled ? await upi.sync() : { delayed: false }
     if (recovered.delayed) throw new HttpError(503, 'Bank confirmation is delayed. Do not pay again; check this order later.')
     await priceOrder(prisma, order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })))
     res.json(await upi.create(order))

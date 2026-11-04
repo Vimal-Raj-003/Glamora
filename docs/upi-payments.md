@@ -1,8 +1,20 @@
 # Glamora UPI integration
 
-UPI is the default checkout provider. No production deployment or real payment was
-performed during implementation. Live checkout stays disabled until a genuine
-bank email has been validated, as requested by the owner.
+UPI is the default checkout provider. Customer QR creation is separate from bank
+verification. The QR and pending-status changes are approved for release with
+UPI_VERIFICATION_ENABLED=0. The supplied HDFC credit alert does not contain an
+order reference, so secure automatic attribution remains unresolved. Automatic
+payment confirmation must remain disabled.
+
+Latest local validation: all 34 tests passed, the production build passed, and
+the changed-source secret scan and Git whitespace checks passed. The critical
+missing bank-to-order reference prevents enabling automatic payment confirmation
+despite these passing tests.
+
+Customer QR creation now works with verification disabled. Orders remain pending,
+the UI explicitly warns that verification is unavailable and not to send money,
+and no Gmail reads, UTR claims, reconciliation or payment finalization run while
+disabled. Do not use this unfinished local flow to collect real customer payments.
 
 ## Package and architecture
 
@@ -17,8 +29,9 @@ Clerk, catalog, addresses, Prisma, guest cart merging and existing shipping rule
 remain in place. Both Buy Now and cart checkout send only IDs and quantities.
 The server recalculates prices, stock limits, subtotal and shipping. Shipping is
 free below Rs 1,000 and Rs 80 at or above Rs 1,000. The Order.total retains this
-original total. A payment attempt allocates an extra 1–99 paise, which is shown
-separately and included in Payment.payableAmount and actual Payment.amount.
+original total. New customer payment attempts request exactly this total, with no
+extra paise. Historical attempts retain their stored amount. Attribution never
+uses amount alone; separate same-amount orders still require verified references.
 
 ## Environment
 
@@ -34,7 +47,7 @@ source, screenshots, reports or a frontend `VITE_` variable.
 | UPI_API_KEY | Server-only fallback authentication for scheduled recovery |
 | UPI_ALERT_SENDERS | Comma-separated exact alert addresses; no domains or wildcards |
 | UPI_RECEIVING_ACCOUNT_LAST4 | Receiving account suffix shown in alerts |
-| UPI_VERIFICATION_ENABLED | Keep `0` until authenticated bank-format and matching validation; `1` enables live checkout and sync |
+| UPI_VERIFICATION_ENABLED | Keep `0`; controls Gmail sync, UTR claims and finalization independently of QR generation |
 | DATABASE_URL | Existing pooled Neon runtime URL |
 | DIRECT_URL | Existing direct URL for explicit migrations |
 | CRON_SECRET | Recommended separate secret for the recovery endpoint; UPI_API_KEY is the fallback |
@@ -52,7 +65,7 @@ or Gmail calls. The environment example contains blank names only.
 ## Verification and recovery
 
 1. The authenticated order endpoint calculates the original order total.
-2. A durable attempt is allocated using a PostgreSQL transaction and advisory lock.
+2. A durable exact-order-amount attempt is created using a PostgreSQL transaction and advisory lock.
 3. React shows the exact amount, destination, reference, QR and UPI app link.
 4. Polling uses Clerk bearer authentication and checks order ownership.
 5. Gmail sync connects with TLS, opens INBOX read-only, and scans the oldest 100
@@ -126,8 +139,24 @@ servers are running. No login, shipping address, order creation, Gmail access or
 payment confirmation is used. The QR encodes the environment destination and a
 Rs 1.01 preview amount with a non-order note. Scan to inspect and cancel; do not
 authorize a payment. This is an actual scannable UPI URI, not simulated funds.
-The preview page is selected only by a development build, and its server endpoint
-rejects non-loopback requests, non-local hosts, production and Vercel execution.
+The local `/api/dev/upi-preview` endpoint rejects non-loopback requests, non-local
+hosts, production and Vercel execution.
+
+The same checkout URL with `?preview=1` now also supports a protected preview in
+production builds. It requires Super Admin sign-in in both the UI and the backend.
+The frontend calls `GET /api/upi/preview` with the existing Clerk bearer token;
+the server enforces `requireAdmin` and a 10-request-per-minute rate limit. Responses
+are private and non-cacheable. Destination and preview amount cannot be overridden
+by request parameters. Only UPI_ID and UPI_NAME are needed for QR rendering;
+Gmail credentials, database payment records and UPI_VERIFICATION_ENABLED=1 are not.
+Ordinary customers cannot access this preview. Customer QR creation is a separate
+authenticated order flow; preview still creates no order or payment attempt.
+Bank verification and all finalization gates stay disabled while
+UPI_VERIFICATION_ENABLED=0. An existing attempt, even if expired, is reused while
+verification is unavailable rather than issuing a new request for money.
+
+The protected preview changes have only been implemented and tested locally; no
+Vercel variables were changed and no push or deployment was performed for them.
 
 The supplied screenshots show HDFC's "has been successfully credited" and
 "account ending in" wording. The parser now handles these phrases, with a synthetic
@@ -140,6 +169,18 @@ receiving-account suffix. Its credit format parses, but it still has no Glamora
 order note. Independent cryptographic DKIM re-verification was not performed.
 Order attribution remains unresolved, so automatic confirmation stays disabled.
 No fallback to amount-only matching was enabled.
+
+The bank UTR identifies a bank transaction, but the merchant does not know it when
+the order QR is generated. Asking the customer to type a UTR does not prove that
+the customer owns that credit. The alert also masks the payer identifier. A
+reference-less genuine email therefore remains unmatched, even if an amount or
+typed UTR happens to coincide with a pending order. Tests cover two such orders.
+
+Release requires receiver-side evidence that binds the transaction to the order:
+for example, a bank-authenticated feed/status API containing the merchant/order
+reference, or an actual supported bank alert that echoes the exact QR reference.
+No such binding has been demonstrated for the supplied HDFC alert. Adding a URI
+note or changing an environment flag cannot manufacture missing bank evidence.
 
 Export a genuine message from Gmail as raw `.eml`. Keep it outside version control.
 `node scripts/validate-bank-email.mjs <path>` checks format/authentication/account
@@ -207,7 +248,7 @@ applied. Resolve those advisories separately before production release.
 | `server/app.js` | UPI default routing, recovery endpoint, retained legacy verification |
 | `server/index.js` | Close UPI pool during shutdown |
 | `server/routes/orders.js` | Server pricing, authenticated UPI initiation, status and UTR routes |
-| `server/routes/upi-preview.js` | Local-only destination QR endpoint without order or confirmation operations |
+| `server/routes/upi-preview.js` | Local QR endpoint plus rate-limited Super Admin production preview; no order or confirmation operations |
 | `server/routes/razorpay-orders.js` | Original routes preserved for rollback and outstanding payments |
 | `server/routes/admin.js` | UPI payment metadata, system diagnostics and review API |
 | `server/services/upi-security.js` | Exact sender/account, email parsing and matching checks |
@@ -222,7 +263,7 @@ applied. Resolve those advisories separately before production release.
 | `src/lib/api.js` | Authenticated UPI and admin API calls |
 | `src/lib/chatbot.js` | Direct-UPI support wording |
 | `src/pages/Checkout.jsx` | UPI single/cart checkout and purchased-item cleanup |
-| `src/pages/UpiPreview.jsx` | Local checkout preview for scanning the destination without paying |
+| `src/pages/UpiPreview.jsx` | Checkout destination preview using the local endpoint or authenticated production API |
 | `src/pages/RazorpayCheckout.jsx` | Original checkout UI backup |
 | `src/pages/OrderConfirmation.jsx` | UTR, exact received amount and review status |
 | `src/pages/Account.jsx` | UTR history and review-aware retry availability |
@@ -232,7 +273,7 @@ applied. Resolve those advisories separately before production release.
 | `src/pages/Policies.jsx` | Accurate payment-evidence/privacy/adjustment wording |
 | `test/fixtures/baseline.sql` | Original Prisma schema for isolated migration tests |
 | `test/upi.test.js` | Mocked payment, authorization and transactional PostgreSQL tests |
-| `test/upi-preview.test.js` | Destination encoding and production/host restriction tests |
+| `test/upi-preview.test.js` | Destination encoding, local restrictions, production admin authorization/rate limits and disabled real-checkout tests |
 | `docs/upi-payments.md` | Configuration, operation, validation, limitations and this manifest |
 
 The production build also regenerated ignored `dist/` output and Prisma generated

@@ -670,7 +670,8 @@ function System() {
   const money = (n) => `₹${n.toLocaleString('en-IN')}`
   const rows = [
     ['Database (Neon)', flag(data.database.connected, 'Connected', 'Not connected')],
-    ['UPI checkout', flag(data.upi?.enabled, 'Enabled', 'Awaiting bank-email validation')],
+    ['UPI QR configuration', flag(data.upi?.qrConfigured, 'Configured', 'Destination missing')],
+    ['Automatic UPI verification', flag(data.upi?.enabled, 'Enabled', 'Disabled pending secure bank matching')],
     ['UPI bank connection', <span>{data.upi?.lastError || (data.upi?.lastOk ? 'Last sync succeeded' : 'Not verified yet')}</span>],
     ['Rollback (Razorpay)', data.razorpay.configured ? <span className="font-semibold">{data.razorpay.mode === 'live' ? <span className="text-emerald-700">LIVE mode</span> : data.razorpay.mode === 'test' ? 'TEST mode' : 'Configured'}</span> : flag(false, '', 'Not configured')],
     ['Razorpay webhook secret', flag(data.razorpay.webhookSecretSet, 'Set', 'Not set (optional)')],

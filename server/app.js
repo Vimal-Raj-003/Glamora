@@ -55,7 +55,7 @@ export function createApp({ prisma, authProvider, upiService }) {
     }
   })
   app.use('/api', catalogRouter(prisma))
-  app.use('/api', upiPreviewRouter())
+  app.use('/api', upiPreviewRouter(process.env, auth))
   app.use('/api/admin', adminRouter(prisma, auth, upi))
   const legacyOrders = razorpayOrdersRouter(prisma, auth)
   // Accept verification callbacks for already-open Razorpay checkouts only.

@@ -97,10 +97,10 @@ test('matching requires exact amount, reference, evidence and valid timing', () 
   assert.equal(classifyCredit(p, credit(p, { amount: NaN })), null)
   assert.equal(classifyCredit(p, credit(p, { receivedAt: new Date(Date.parse(p.createdAt) - 500).toISOString() })), 'paid')
 })
-test('migration preserves pre-existing data; new payment allocation produces exact extra paise', async (t) => {
+test('migration preserves pre-existing data; new payment allocation requests exact order total', async (t) => {
   const { store, db } = await database(t)
   const p = await create(store)
-  assert.ok(p.payAmount > 100 && p.payAmount < 101)
+  assert.equal(p.payAmount, 100)
   assert.equal((await create(store)).id, p.id)
   assert.equal((await db.query('SELECT count(*)::int n FROM "User"')).rows[0].n, 1)
   assert.equal((await db.query('SELECT stock FROM "Product" WHERE id=\'p\'')).rows[0].stock, 10)
@@ -257,7 +257,7 @@ test('SDK QR/link use the environment destination, preserve base total and confi
   const service = createUpiService({ env, pool, inboxReader: async () => ({ alerts: queue.splice(0), lastUid: 1, uidValidity: '7' }) })
   const init = await service.create({ id: 'o', total: 100 })
   assert.equal(init.payment.amount, 100)
-  assert.ok(init.payment.extraPaise >= 1 && init.payment.extraPaise <= 99)
+  assert.equal(init.payment.extraPaise, 0)
   assert.match(init.payment.qr, /^<svg/)
   const link = new URL(init.payment.link)
   assert.equal(link.searchParams.get('pa'), config.vpa)
@@ -291,4 +291,85 @@ test('additive migration retains historical Razorpay identifiers and confirmed p
   assert.equal(row.razorpayOrderId, 'order_fixture'); assert.equal(row.razorpayPaymentId, 'pay_fixture')
   assert.equal(row.status, 'captured'); assert.equal(row.provider, 'razorpay')
   assert.equal((await db.query('SELECT status FROM "Order"')).rows[0].status, 'paid')
+})
+
+test('customer QR and polling work with verification off without Gmail, payment capture or stock changes', async (t) => {
+  const { pool, db } = await database(t)
+  let inboxCalls = 0
+  const service = createUpiService({ env: { UPI_ID: config.vpa, UPI_NAME: config.name, UPI_VERIFICATION_ENABLED: '0' },
+    pool, inboxReader: async () => { inboxCalls++; throw new Error('Must not access Gmail') } })
+  const init = await service.create({ id: 'o', total: 100 })
+  assert.equal(init.verificationEnabled, false)
+  assert.equal(init.payment.payAmount, 100)
+  assert.equal(new URL(init.payment.link).searchParams.get('pa'), config.vpa)
+  assert.equal(new URL(init.payment.link).searchParams.get('am'), '100.00')
+  const status = await service.status('o', init.payment.id)
+  assert.equal(status.verificationEnabled, false); assert.equal(status.finalized, false)
+  assert.equal(status.payment.status, 'pending')
+  await assert.rejects(service.claim('o', init.payment.id, '427712345678'), (e) => e.status === 503)
+  assert.equal(inboxCalls, 0)
+  assert.equal((await db.query('SELECT status FROM "Order" WHERE id=\'o\'')).rows[0].status, 'pending')
+  assert.equal((await db.query('SELECT count(*)::int n FROM "Payment"')).rows[0].n, 0)
+  assert.equal((await db.query('SELECT stock FROM "Product" WHERE id=\'p\'')).rows[0].stock, 10)
+  assert.equal((await db.query('SELECT count(*)::int n FROM "CartItem"')).rows[0].n, 2)
+  // An expired request cannot be replaced by a fresh request for money while
+  // earlier transfers cannot be reconciled.
+  await db.query(`UPDATE glamora_upi_attempts SET payload=jsonb_set(payload,'{expiresAt}',to_jsonb($1::text)) WHERE id=$2`,
+    [new Date(Date.now() - 1000).toISOString(), init.payment.id])
+  assert.equal((await service.create({ id: 'o', total: 100 })).payment.id, init.payment.id)
+  await assert.rejects(service.create({ id: 'o', total: 101 }), (e) => e.status === 409)
+  const changedDestination = createUpiService({ env: { UPI_ID: 'changed@upi', UPI_NAME: config.name, UPI_VERIFICATION_ENABLED: '0' }, pool })
+  await assert.rejects(changedDestination.create({ id: 'o', total: 100 }), (e) => e.status === 409)
+})
+
+test('two same-amount orders cannot settle from a genuine HDFC-format credit lacking an order reference', async (t) => {
+  const { store, db } = await database(t)
+  const first = await create(store)
+  await db.exec(`INSERT INTO "Order"(id,"userId",subtotal,total,"shippingAddress") VALUES('other','u',100,100,'{}')`)
+  const second = await create(store, { orderId: 'other', ref: 'GLMBBBB3333' })
+  assert.equal(first.payAmount, second.payAmount)
+  await store.ingestAlerts([credit(first, { ref: '' })])
+  assert.equal((await store.getPayment(first.id)).status, 'pending')
+  assert.equal((await store.getPayment(second.id)).status, 'pending')
+  assert.equal((await store.claimUtr(second.id, '427712345678')).result, 'not_found')
+  assert.equal(await finalizeUpiOrder(store, first.id), 'not_paid')
+  assert.equal(await finalizeUpiOrder(store, second.id), 'not_paid')
+})
+
+test('authenticated single and multi-product customer checkout create pending exact-amount QR requests with verification off', async (t) => {
+  const { pool, db } = await database(t)
+  let inboxCalls = 0
+  const upi = createUpiService({ env: { UPI_ID: config.vpa, UPI_NAME: config.name, UPI_VERIFICATION_ENABLED: '0' }, pool,
+    inboxReader: async () => { inboxCalls++; throw new Error('No Gmail expected') } })
+  const prisma = {
+    product: { findMany: async ({ where }) => (await db.query('SELECT * FROM "Product" WHERE id=ANY($1::text[])', [where.id.in])).rows },
+    $transaction: async (fn) => fn({ $queryRaw: async () => [], order: {
+      findMany: async () => [],
+      create: async ({ data }) => {
+        const id = crypto.randomUUID()
+        await db.query('INSERT INTO "Order"(id,"userId",subtotal,"shippingFee",total,"shippingAddress") VALUES($1,$2,$3,$4,$5,$6)',
+          [id, data.userId, data.subtotal, data.shippingFee, data.total, JSON.stringify(data.shippingAddress)])
+        for (const i of data.items.create) await db.query('INSERT INTO "OrderItem"(id,"orderId","productId",name,price,quantity) VALUES($1,$2,$3,$4,$5,$6)',
+          [crypto.randomUUID(), id, i.productId, i.name, i.price, i.quantity])
+        return { id, total: data.total }
+      },
+    } }),
+  }
+  const app = express(); app.use(express.json())
+  app.use('/orders', ordersRouter(prisma, { requireUser(req, res, next) { req.user = { id: 'u' }; next() } }, upi))
+  app.use((e, req, res, next) => res.status(e.status || 500).json({ error: e.message }))
+  const server = app.listen(0, '127.0.0.1'); await new Promise((r) => server.once('listening', r)); t.after(() => server.close())
+  const address = { fullName: 'Fixture Buyer', phone: '9000000000', line1: '123 Fixture Road', city: 'Fixture City', state: 'Fixture State', postalCode: '600001' }
+  for (const items of [[{ productId: 'p', quantity: 1 }], [{ productId: 'p', quantity: 1 }, { productId: 'q', quantity: 2 }]]) {
+    const r = await fetch(`http://127.0.0.1:${server.address().port}/orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, address, amount: 0.01 }) })
+    assert.equal(r.status, 201)
+    const d = await r.json(), expected = items.length === 1 ? 100 : 600
+    assert.equal(d.payment.amount, expected); assert.equal(d.payment.payAmount, expected)
+    assert.equal(new URL(d.payment.link).searchParams.get('am'), expected.toFixed(2))
+    assert.equal(d.verificationEnabled, false); assert.equal(d.payment.status, 'pending')
+  }
+  assert.equal(inboxCalls, 0)
+  assert.equal((await db.query('SELECT count(*)::int n FROM "Payment"')).rows[0].n, 0)
+  assert.deepEqual((await db.query('SELECT stock FROM "Product" ORDER BY id')).rows.map((r) => r.stock), [10, 10])
 })
