@@ -1,6 +1,5 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import rateLimit from 'express-rate-limit'
 import { ah, parse, addressSchema, HttpError, shippingFor } from '../lib.js'
 
 export const paymentSelect = { select: { id: true, provider: true, upiPaymentId: true, utr: true, payableAmount: true,
@@ -69,11 +68,6 @@ export function ordersRouter(prisma, { requireUser }, upi) {
   r.get('/:id/payments/:paymentId', ah(async (req, res) => {
     await ownOrder(req)
     res.json(await upi.status(req.params.id, req.params.paymentId))
-  }))
-  r.post('/:id/payments/:paymentId/utr', rateLimit({ windowMs: 60000, limit: 10 }), ah(async (req, res) => {
-    await ownOrder(req)
-    const { utr } = parse(z.object({ utr: z.string().regex(/^\d{12}$/) }), req.body)
-    res.json(await upi.claim(req.params.id, req.params.paymentId, utr))
   }))
   return r
 }

@@ -6,7 +6,7 @@ UPI_VERIFICATION_ENABLED=0. The supplied HDFC credit alert does not contain an
 order reference, so secure automatic attribution remains unresolved. Automatic
 payment confirmation must remain disabled.
 
-Latest local validation: all 34 tests passed, the production build passed, and
+Prior release validation: all 34 tests passed, the production build passed, and
 the changed-source secret scan and Git whitespace checks passed. The critical
 missing bank-to-order reference prevents enabling automatic payment confirmation
 despite these passing tests.
@@ -247,7 +247,7 @@ applied. Resolve those advisories separately before production release.
 | `scripts/validate-bank-email.mjs` | Offline raw-email format diagnostic |
 | `server/app.js` | UPI default routing, recovery endpoint, retained legacy verification |
 | `server/index.js` | Close UPI pool during shutdown |
-| `server/routes/orders.js` | Server pricing, authenticated UPI initiation, status and UTR routes |
+| `server/routes/orders.js` | Server pricing, authenticated UPI initiation and automatic status polling |
 | `server/routes/upi-preview.js` | Local QR endpoint plus rate-limited Super Admin production preview; no order or confirmation operations |
 | `server/routes/razorpay-orders.js` | Original routes preserved for rollback and outstanding payments |
 | `server/routes/admin.js` | UPI payment metadata, system diagnostics and review API |
@@ -257,7 +257,7 @@ applied. Resolve those advisories separately before production release.
 | `server/services/upi-finalize.js` | Evidence-backed transactional order/stock/cart finalization |
 | `server/services/upi.js` | Server adapter, QR output, gating and reconciliation |
 | `src/App.jsx` | UPI default and explicit rollback UI switch |
-| `src/components/UpiPayment.jsx` | Exact-amount QR, deep link, authenticated polling and UTR UI |
+| `src/components/UpiPayment.jsx` | Exact-amount QR, payee details, instructions and authenticated polling |
 | `src/components/PayNowButton.jsx` | UPI retry/check flow and explicit rollback selection |
 | `src/components/RazorpayPayNowButton.jsx` | Original retry UI backup |
 | `src/lib/api.js` | Authenticated UPI and admin API calls |
@@ -279,3 +279,23 @@ applied. Resolve those advisories separately before production release.
 The production build also regenerated ignored `dist/` output and Prisma generated
 its ignored client under `node_modules/`. The pre-existing untracked PDF under
 `images/mktools/` was not changed. No commits were created.
+
+## Customer QR-only checkout update
+
+The payment dialog has no UTR field, manual submission button or payment-app
+redirect button. It shows the server-generated QR, payee details, exact payable
+amount, instructions and pending status. The customer UTR HTTP endpoint has been
+removed; internal bank UTR deduplication and admin review remain intact.
+
+Polling can trigger bounded Gmail reconciliation only when verification is
+explicitly enabled and configured. With UPI_VERIFICATION_ENABLED=0, no Gmail
+monitoring or automatic finalization occurs. Existing bank-reference, authenticated
+credit, amount, timing and idempotency checks are unchanged. No production
+credentials, database changes or new dependencies are needed for this UI update.
+
+Full automation requires a bank/acquirer API or authenticated notification that
+binds a merchant-generated order reference to the verified transaction, or a
+provider-issued per-order payment identifier with authenticated status lookup.
+The supplied HDFC email does not supply that binding. A QR note is not proof
+that an ordinary UPI app will preserve it in a bank email. Until this external
+requirement is satisfied and validated end to end, keep verification disabled.

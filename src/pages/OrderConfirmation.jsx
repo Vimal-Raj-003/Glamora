@@ -28,13 +28,13 @@ export default function OrderConfirmation() {
           {paid ? '✓' : '…'}
         </div>
         <h1 className="mt-5 font-serif text-4xl font-semibold">
-          {paid ? 'Thank you for your order!' : review ? 'Payment needs review' : unpaid ? 'Payment pending' : 'Order ' + order.status}
+          {paid ? 'Payment Successful - Order Confirmed' : review ? 'Payment needs review' : unpaid ? 'Payment pending' : 'Order ' + order.status}
         </h1>
         <p className="mt-2 text-muted">
           {paid
             ? 'Your payment was successful. We’ll start packing your order right away.'
             : review ? 'A credit was received. Please contact support before paying again.' : unpaid
-              ? 'We haven’t received your payment yet. You can complete it below.'
+              ? 'Your payment has not been verified yet. If you already paid, do not pay again; wait for confirmation or contact support.'
               : 'This order is no longer active.'}
         </p>
         {unpaid && (
@@ -65,7 +65,7 @@ export default function OrderConfirmation() {
           <div className="flex justify-between"><dt>Shipping</dt><dd>{Number(order.shippingFee) === 0 ? 'Free' : formatPrice(order.shippingFee)}</dd></div>
           <div className="flex justify-between text-base font-bold"><dt>Order total</dt><dd>{formatPrice(order.total)}</dd></div>
         </dl>
-        {payment?.provider === 'upi' && <p className="mt-4 text-sm">Amount received: {formatPrice(payment.amount)} (includes payment matching adjustment)</p>}
+        {payment?.provider === 'upi' && <p className="mt-4 text-sm">Amount received: {formatPrice(payment.amount)}</p>}
         {order.payments?.some((p) => p.status === 'review' || p.status === 'duplicate') && <p className="mt-4 text-sm">Credit received; support review required. Do not pay again.</p>}
         {payment && (
           <div className="mt-6 border-t border-line pt-4 text-sm">
